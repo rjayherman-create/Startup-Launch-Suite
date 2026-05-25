@@ -25,7 +25,7 @@ import {
   Workflow,
   Zap
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   StartupBrandingEngine,
   createBrandProfile,
@@ -36,6 +36,17 @@ import {
 
 type BuilderStep = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 type StoreCheck = "unchecked" | "checking" | "checked";
+
+const builderRoutes: Array<{ step: BuilderStep; label: string; path: string }> = [
+  { step: 1, label: "Name App", path: "/name-app" },
+  { step: 2, label: "Describe App", path: "/describe-app" },
+  { step: 3, label: "Choose Style", path: "/choose-style" },
+  { step: 4, label: "Store Check", path: "/store-check" },
+  { step: 5, label: "Brand Identity", path: "/brand-identity" },
+  { step: 6, label: "Website Assets", path: "/website-assets" },
+  { step: 7, label: "Landing Page", path: "/landing-page" },
+  { step: 8, label: "Export Kit", path: "/export-kit" }
+];
 
 const defaultProfile = createBrandProfile({
   businessName: "LaunchPilot",
@@ -73,7 +84,7 @@ const pipeline = [
 const namingAngles = ["Pilot", "Forge", "Stack", "Kit", "Signal", "Studio", "Base", "Lift"];
 
 export function App() {
-  const [step, setStep] = useState<BuilderStep>(1);
+  const [step, setStep] = useState<BuilderStep>(() => getStepFromPath(window.location.pathname));
   const [businessName, setBusinessName] = useState(defaultProfile.businessName);
   const [tagline, setTagline] = useState(defaultProfile.tagline ?? "");
   const [description, setDescription] = useState(defaultProfile.description);
@@ -96,6 +107,21 @@ export function App() {
 
   const engine = useMemo(() => new StartupBrandingEngine(brandProfile), [brandProfile]);
 
+  useEffect(() => {
+    const handlePopState = () => setStep(getStepFromPath(window.location.pathname));
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  function goToStep(nextStep: BuilderStep, mode: "push" | "replace" = "push") {
+    const route = builderRoutes.find((item) => item.step === nextStep) ?? builderRoutes[0];
+    if (window.location.pathname !== route.path) {
+      const update = mode === "replace" ? window.history.replaceState : window.history.pushState;
+      update.call(window.history, { step: nextStep }, "", route.path);
+    }
+    setStep(nextStep);
+  }
+
   function generateNameIdeas() {
     const words = `${description} ${industry} ${audience}`
       .toLowerCase()
@@ -109,7 +135,7 @@ export function App() {
     ]);
 
     setNameIdeas([...new Set(ideas)].slice(0, 8));
-    setStep(1);
+    goToStep(1);
   }
 
   function selectName(name: string) {
@@ -138,7 +164,7 @@ export function App() {
     await nextEngine.generateFavicon();
     setBrandProfile(nextEngine.getProfile());
     setAssetStatus((current) => ({ ...current, identity: true }));
-    setStep(5);
+    goToStep(5);
     setGenerating(false);
   }
 
@@ -147,7 +173,7 @@ export function App() {
     await engine.generateHeroImage();
     setBrandProfile({ ...engine.getProfile() });
     setAssetStatus((current) => ({ ...current, website: true }));
-    setStep(6);
+    goToStep(6);
     setGenerating(false);
   }
 
@@ -156,7 +182,7 @@ export function App() {
     await engine.generateLandingPage();
     setBrandProfile({ ...engine.getProfile() });
     setAssetStatus((current) => ({ ...current, landing: true }));
-    setStep(7);
+    goToStep(7);
     setGenerating(false);
   }
 
@@ -172,7 +198,7 @@ export function App() {
   function exportStartupKit() {
     downloadStartupKit(brandProfile);
     setAssetStatus((current) => ({ ...current, export: true }));
-    setStep(8);
+    goToStep(8);
   }
 
   const progress = Math.round((Object.values(assetStatus).filter(Boolean).length / 4) * 100);
@@ -189,22 +215,15 @@ export function App() {
         </div>
 
         <nav className="step-list" aria-label="Startup builder steps">
-          {[
-            "Name App",
-            "Describe App",
-            "Choose Style",
-            "Store Check",
-            "Brand Identity",
-            "Website Assets",
-            "Landing Page",
-            "Export Kit"
-          ].map((label, index) => {
-            const itemStep = (index + 1) as BuilderStep;
+          {builderRoutes.map((route, index) => {
             return (
-              <button className={step === itemStep ? "step active" : "step"} key={label} onClick={() => setStep(itemStep)} type="button">
+              <a className={step === route.step ? "step active" : "step"} href={route.path} key={route.path} onClick={(event) => {
+                event.preventDefault();
+                goToStep(route.step);
+              }}>
                 <span>{index + 1}</span>
-                <strong>{label}</strong>
-              </button>
+                <strong>{route.label}</strong>
+              </a>
             );
           })}
         </nav>
@@ -651,3 +670,8 @@ const crcTable = Array.from({ length: 256 }, (_, index) => {
   }
   return value >>> 0;
 });
+
+function getStepFromPath(pathname: string): BuilderStep {
+  const normalizedPath = pathname.replace(/\/+$/, "") || "/";
+  return builderRoutes.find((route) => route.path === normalizedPath)?.step ?? 1;
+}
