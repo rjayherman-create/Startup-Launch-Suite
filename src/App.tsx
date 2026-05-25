@@ -289,6 +289,26 @@ export function App() {
     setGenerating(false);
   }
 
+  async function generateHomepageAsset() {
+    if (!wantsWebsite) {
+      setAssetStatus((current) => ({ ...current, landing: true }));
+      return;
+    }
+
+    setGenerating(true);
+    const nextEngine = new StartupBrandingEngine(brandProfile);
+    await nextEngine.generateLandingPage();
+    const nextProfile = { ...nextEngine.getProfile() };
+    setBrandProfile(nextProfile);
+    setCodeDraft(nextProfile.landingPage?.html ?? defaultLandingCode(nextProfile));
+    setAssetStatus((current) => ({ ...current, landing: true }));
+    if (window.location.pathname !== "/website-assets") {
+      window.history.pushState({ step: 6 }, "", "/website-assets");
+    }
+    setStep(6);
+    setGenerating(false);
+  }
+
   async function regenerate(newPresetId: StylePresetId) {
     setGenerating(true);
     const result = await engine.regenerateBranding(newPresetId);
@@ -477,6 +497,7 @@ export function App() {
           generateIdentity={generateIdentity}
           generateFaviconAsset={generateFaviconAsset}
           generateHeroImageAsset={generateHeroImageAsset}
+          generateHomepageAsset={generateHomepageAsset}
           generateLandingPage={generateLandingPage}
           generateLogoAsset={generateLogoAsset}
           generateNameIdeas={generateNameIdeas}
@@ -534,6 +555,7 @@ function StepPage(props: {
   generateIdentity: () => void;
   generateFaviconAsset: () => void;
   generateHeroImageAsset: () => void;
+  generateHomepageAsset: () => void;
   generateLandingPage: () => void;
   generateLogoAsset: () => void;
   generateNameIdeas: () => void;
@@ -654,6 +676,7 @@ function StepPage(props: {
         cutCodeDraft={props.cutCodeDraft}
         exportStartupKit={props.exportStartupKit}
         generateLandingPage={props.generateLandingPage}
+        generateHomepageAsset={props.generateHomepageAsset}
         generateWebsiteAssets={props.generateHeroImageAsset}
         generating={props.generating}
         regenerate={props.regenerate}
@@ -854,6 +877,7 @@ function OutputPanel(props: {
   copyCodeDraft: () => void;
   cutCodeDraft: () => void;
   exportStartupKit: () => void;
+  generateHomepageAsset: () => void;
   generateLandingPage: () => void;
   generateWebsiteAssets: () => void;
   generating: boolean;
@@ -883,7 +907,7 @@ function OutputPanel(props: {
 
       <div className="output-stack">
         {props.step === 6 ? (
-          <div className="hero-generator-panel" id="section-website-assets">
+          <div className="website-flow" id="section-website-assets">
             <BrandEditPanel
               aiEditPrompt={props.aiEditPrompt}
               aiEditStatus={props.aiEditStatus}
@@ -893,15 +917,19 @@ function OutputPanel(props: {
               updateBrandColor={props.updateBrandColor}
               updateBrandStyle={props.updateBrandStyle}
             />
-            <GeneratorCard
-              actionLabel="Create Hero Image"
-              detail={props.wantsApp ? "Pulls app name, audience, style, typography, colors, and tone into the hero image generator." : "Pulls app name, audience, style, typography, colors, and tone into the website hero generator."}
-              imageUrl={props.brandProfile.heroImage?.imageUrl}
+            <HeroImageSection
+              generating={props.generating}
               onGenerate={props.generateWebsiteAssets}
-              status={props.brandProfile.heroImage ? "Created" : "Not created"}
-              title="Hero Image Creator"
+              profile={props.brandProfile}
+              wantsApp={props.wantsApp}
             />
-            <OutputRow done={props.assetStatus.website} icon={Image} title={props.wantsApp ? "Website/App Assets" : "Website Assets"} detail={props.wantsApp ? "Hero image, app icon direction, launch visuals, mockup system" : "Hero image, illustrations, mockup visual system"} />
+            <HomepageSection
+              codeDraft={props.codeDraft}
+              generating={props.generating}
+              onGenerate={props.generateHomepageAsset}
+              profile={props.brandProfile}
+              wantsWebsite={props.wantsWebsite}
+            />
           </div>
         ) : null}
         {props.step === 7 && props.wantsWebsite ? (
@@ -1072,6 +1100,44 @@ function BrandEditPanel(props: {
           <Sparkles size={18} /> Apply AI Edit
         </button>
         {props.aiEditStatus ? <p className="output-note">{props.aiEditStatus}</p> : null}
+      </div>
+    </section>
+  );
+}
+
+function HeroImageSection({ generating, onGenerate, profile, wantsApp }: { generating: boolean; onGenerate: () => void; profile: BrandProfile; wantsApp: boolean }) {
+  return (
+    <section className="asset-builder-section">
+      <div className="asset-builder-copy">
+        <p className="eyebrow">Step 2</p>
+        <h3>Hero image</h3>
+        <p>{wantsApp ? "Create a launch visual that can work for the website, app store graphics, and product mockups." : "Create the main website hero visual from the edited brand context."}</p>
+        <button className="primary-button" disabled={generating} onClick={onGenerate} type="button">
+          <Image size={18} /> Create Hero Image
+        </button>
+      </div>
+      <div className="asset-preview-frame">
+        {profile.heroImage ? <img src={profile.heroImage.imageUrl} alt="" /> : <div><Image size={34} /><span>Hero image preview</span></div>}
+      </div>
+    </section>
+  );
+}
+
+function HomepageSection({ codeDraft, generating, onGenerate, profile, wantsWebsite }: { codeDraft: string; generating: boolean; onGenerate: () => void; profile: BrandProfile; wantsWebsite: boolean }) {
+  return (
+    <section className="asset-builder-section">
+      <div className="asset-builder-copy">
+        <p className="eyebrow">Step 3</p>
+        <h3>Homepage</h3>
+        <p>{wantsWebsite ? "Generate the homepage after the hero image so the page uses the same colors, type, and visual direction." : "Website generation is skipped because this launch is currently set to app-only."}</p>
+        <button className="primary-button" disabled={!wantsWebsite || generating} onClick={onGenerate} type="button">
+          <Globe2 size={18} /> Create Homepage
+        </button>
+      </div>
+      <div className="homepage-preview" style={{ background: profile.colors.background, color: profile.colors.text }}>
+        <span>{profile.businessName}</span>
+        <strong>{profile.tagline || "Launch-ready homepage"}</strong>
+        <p>{codeDraft ? "Editable homepage code is ready in Export Kit." : "Generate the homepage to create editable code."}</p>
       </div>
     </section>
   );
