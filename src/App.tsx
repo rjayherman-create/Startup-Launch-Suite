@@ -1,0 +1,547 @@
+import {
+  Archive,
+  BadgeDollarSign,
+  Boxes,
+  CheckCircle2,
+  ChevronRight,
+  Database,
+  Download,
+  FileCode2,
+  FileImage,
+  Fingerprint,
+  Globe2,
+  Image,
+  Layers3,
+  Palette,
+  RefreshCw,
+  Rocket,
+  ShieldCheck,
+  Sparkles,
+  Type,
+  Wand2,
+  Workflow,
+  Zap
+} from "lucide-react";
+import { useMemo, useState } from "react";
+import {
+  StartupBrandingEngine,
+  createBrandProfile,
+  stylePresets,
+  type BrandProfile,
+  type StylePresetId
+} from "./branding-engine";
+
+type BuilderStep = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+
+const defaultProfile = createBrandProfile({
+  businessName: "LaunchPilot",
+  tagline: "AI Startup Launch System",
+  description: "AI platform that helps founders launch startups with branding, website assets, and conversion-focused pages.",
+  industry: "SaaS",
+  audience: "solo founders and small startup teams",
+  presetId: "startup-dark"
+});
+
+const exportItems = [
+  { label: "Logo PNG", icon: FileImage, detail: "Primary mark and social-safe image" },
+  { label: "Logo SVG", icon: FileCode2, detail: "Editable vector source" },
+  { label: "Favicon Package", icon: Fingerprint, detail: "16px, 32px, Apple touch icon" },
+  { label: "Hero Images", icon: Image, detail: "Launch page hero and product mockup art" },
+  { label: "Landing Code", icon: Globe2, detail: "Homepage HTML with CTA sections" },
+  { label: "Brand Tokens", icon: Palette, detail: "Colors, fonts, style direction" }
+];
+
+const systemCards = [
+  { icon: Database, title: "Postgres", detail: "One main database stores brand profiles, asset versions, exports, billing state, and regeneration history." },
+  { icon: ShieldCheck, title: "Clerk/Auth", detail: "One identity layer across free tools, standalone apps, and the main Startup Launch Suite." },
+  { icon: BadgeDollarSign, title: "Stripe", detail: "$29-$99 monthly plans or a $99 one-time startup pack at export." },
+  { icon: Boxes, title: "Isolated Services", detail: "Logo, favicon, hero, and landing generators keep separate prompt systems and worker queues." }
+];
+
+const pipeline = [
+  "Generate logo",
+  "Extract colors, typography, style direction",
+  "Send brand context to generators",
+  "Assemble startup kit"
+];
+
+export function App() {
+  const [step, setStep] = useState<BuilderStep>(1);
+  const [businessName, setBusinessName] = useState(defaultProfile.businessName);
+  const [tagline, setTagline] = useState(defaultProfile.tagline ?? "");
+  const [description, setDescription] = useState(defaultProfile.description);
+  const [industry, setIndustry] = useState(defaultProfile.industry);
+  const [audience, setAudience] = useState(defaultProfile.audience);
+  const [presetId, setPresetId] = useState<StylePresetId>("startup-dark");
+  const [brandProfile, setBrandProfile] = useState<BrandProfile>(defaultProfile);
+  const [generating, setGenerating] = useState(false);
+  const [assetStatus, setAssetStatus] = useState({
+    identity: false,
+    website: false,
+    landing: false,
+    export: false
+  });
+
+  const engine = useMemo(() => new StartupBrandingEngine(brandProfile), [brandProfile]);
+
+  async function generateIdentity() {
+    setGenerating(true);
+    const profile = createBrandProfile({ businessName, tagline, description, industry, audience, presetId });
+    const nextEngine = new StartupBrandingEngine(profile);
+    await nextEngine.generateLogo();
+    await nextEngine.generateFavicon();
+    setBrandProfile(nextEngine.getProfile());
+    setAssetStatus((current) => ({ ...current, identity: true }));
+    setStep(4);
+    setGenerating(false);
+  }
+
+  async function generateWebsiteAssets() {
+    setGenerating(true);
+    await engine.generateHeroImage();
+    setBrandProfile({ ...engine.getProfile() });
+    setAssetStatus((current) => ({ ...current, website: true }));
+    setStep(5);
+    setGenerating(false);
+  }
+
+  async function generateLandingPage() {
+    setGenerating(true);
+    await engine.generateLandingPage();
+    setBrandProfile({ ...engine.getProfile() });
+    setAssetStatus((current) => ({ ...current, landing: true }));
+    setStep(6);
+    setGenerating(false);
+  }
+
+  async function regenerate(newPresetId: StylePresetId) {
+    setGenerating(true);
+    const result = await engine.regenerateBranding(newPresetId);
+    setPresetId(newPresetId);
+    setBrandProfile(result.profile);
+    setAssetStatus({ identity: true, website: true, landing: true, export: assetStatus.export });
+    setGenerating(false);
+  }
+
+  function exportStartupKit() {
+    downloadStartupKit(brandProfile);
+    setAssetStatus((current) => ({ ...current, export: true }));
+    setStep(7);
+  }
+
+  const progress = Math.round((Object.values(assetStatus).filter(Boolean).length / 4) * 100);
+
+  return (
+    <main className="app-shell">
+      <aside className="rail">
+        <div className="brand-lockup">
+          <div className="brand-mark"><Rocket size={24} /></div>
+          <div>
+            <strong>Launch OS</strong>
+            <span>Startup Launch Suite</span>
+          </div>
+        </div>
+
+        <nav className="step-list" aria-label="Startup builder steps">
+          {[
+            "Business Name",
+            "Describe Startup",
+            "Choose Style",
+            "Brand Identity",
+            "Website Assets",
+            "Landing Page",
+            "Export Kit"
+          ].map((label, index) => {
+            const itemStep = (index + 1) as BuilderStep;
+            return (
+              <button className={step === itemStep ? "step active" : "step"} key={label} onClick={() => setStep(itemStep)} type="button">
+                <span>{index + 1}</span>
+                <strong>{label}</strong>
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="suite-positioning">
+          <Sparkles size={18} />
+          <p>One guided launch system, not four separate tools.</p>
+        </div>
+      </aside>
+
+      <section className="workspace">
+        <header className="topbar">
+          <div>
+            <p className="eyebrow">Startup-focused branding system</p>
+            <h1>Launch a consistent brand identity, website kit, and landing page from one brand context.</h1>
+          </div>
+          <div className="progress-card">
+            <span>Startup kit</span>
+            <strong>{progress}%</strong>
+            <div><i style={{ width: `${progress}%` }} /></div>
+          </div>
+        </header>
+
+        <section className="hero-band">
+          <div className="hero-copy">
+            <p className="eyebrow">Master app workflow</p>
+            <h2>{brandProfile.businessName || "Your Startup"} is being assembled as one launch-ready ecosystem.</h2>
+            <p>{brandProfile.description}</p>
+            <div className="hero-actions">
+              <button className="primary-button" onClick={generateIdentity} disabled={generating} type="button">
+                <Wand2 size={18} /> Generate Brand Identity
+              </button>
+              <button className="secondary-button" onClick={() => regenerate(presetId)} disabled={generating || !assetStatus.identity} type="button">
+                <RefreshCw size={18} /> Regenerate Ecosystem
+              </button>
+            </div>
+          </div>
+          <BrandPreview profile={brandProfile} />
+        </section>
+
+        <div className="content-grid two">
+          <BuilderPanel
+            audience={audience}
+            businessName={businessName}
+            description={description}
+            industry={industry}
+            presetId={presetId}
+            setAudience={setAudience}
+            setBusinessName={setBusinessName}
+            setDescription={setDescription}
+            setIndustry={setIndustry}
+            setPresetId={setPresetId}
+            setTagline={setTagline}
+            step={step}
+            tagline={tagline}
+          />
+          <OutputPanel
+            assetStatus={assetStatus}
+            brandProfile={brandProfile}
+            exportStartupKit={exportStartupKit}
+            generateLandingPage={generateLandingPage}
+            generateWebsiteAssets={generateWebsiteAssets}
+            generating={generating}
+            regenerate={regenerate}
+          />
+        </div>
+
+        <section className="pipeline-band">
+          {pipeline.map((item, index) => (
+            <article key={item}>
+              <span>{index + 1}</span>
+              <strong>{item}</strong>
+              {index < pipeline.length - 1 ? <ChevronRight size={18} /> : <CheckCircle2 size={18} />}
+            </article>
+          ))}
+        </section>
+
+        <section className="system-section">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">Smart technical setup</p>
+              <h2>Built as one product with isolated generation engines.</h2>
+            </div>
+          </div>
+          <div className="content-grid four">
+            {systemCards.map((card) => <SystemCard key={card.title} {...card} />)}
+          </div>
+        </section>
+      </section>
+    </main>
+  );
+}
+
+function BuilderPanel(props: {
+  audience: string;
+  businessName: string;
+  description: string;
+  industry: string;
+  presetId: StylePresetId;
+  setAudience: (value: string) => void;
+  setBusinessName: (value: string) => void;
+  setDescription: (value: string) => void;
+  setIndustry: (value: string) => void;
+  setPresetId: (value: StylePresetId) => void;
+  setTagline: (value: string) => void;
+  step: BuilderStep;
+  tagline: string;
+}) {
+  return (
+    <section className="panel">
+      <div className="section-head">
+        <div>
+          <p className="eyebrow">Startup builder flow</p>
+          <h2>Brand Context Engine</h2>
+        </div>
+        <Workflow size={24} />
+      </div>
+
+      <div className="form-grid">
+        <label>
+          <span>Business Name</span>
+          <input value={props.businessName} onChange={(event) => props.setBusinessName(event.target.value)} />
+        </label>
+        <label>
+          <span>Tagline</span>
+          <input value={props.tagline} onChange={(event) => props.setTagline(event.target.value)} />
+        </label>
+        <label>
+          <span>Industry</span>
+          <input value={props.industry} onChange={(event) => props.setIndustry(event.target.value)} />
+        </label>
+        <label>
+          <span>Audience</span>
+          <input value={props.audience} onChange={(event) => props.setAudience(event.target.value)} />
+        </label>
+        <label className="wide">
+          <span>Describe Startup</span>
+          <textarea value={props.description} onChange={(event) => props.setDescription(event.target.value)} rows={5} />
+        </label>
+      </div>
+
+      <div className="preset-grid">
+        {stylePresets.map((preset) => (
+          <button className={props.presetId === preset.id ? "preset active" : "preset"} key={preset.id} onClick={() => props.setPresetId(preset.id)} type="button">
+            <span style={{ background: preset.colors.primary }} />
+            <strong>{preset.label}</strong>
+            <small>{preset.direction}</small>
+          </button>
+        ))}
+      </div>
+
+      <pre className="context-preview">{JSON.stringify({
+        businessName: props.businessName,
+        style: stylePresets.find((item) => item.id === props.presetId)?.label,
+        audience: props.audience,
+        industry: props.industry,
+        activeStep: props.step
+      }, null, 2)}</pre>
+    </section>
+  );
+}
+
+function OutputPanel(props: {
+  assetStatus: { identity: boolean; website: boolean; landing: boolean; export: boolean };
+  brandProfile: BrandProfile;
+  exportStartupKit: () => void;
+  generateLandingPage: () => void;
+  generateWebsiteAssets: () => void;
+  generating: boolean;
+  regenerate: (preset: StylePresetId) => void;
+}) {
+  return (
+    <section className="panel">
+      <div className="section-head">
+        <div>
+          <p className="eyebrow">Generated outputs</p>
+          <h2>Complete startup kit</h2>
+        </div>
+        <Archive size={24} />
+      </div>
+
+      <div className="output-stack">
+        <OutputRow done={props.assetStatus.identity} icon={Palette} title="Brand Identity" detail="Logo, favicon, colors, typography, style direction" />
+        <OutputRow done={props.assetStatus.website} icon={Image} title="Website Assets" detail="Hero image, illustrations, mockup visual system" />
+        <OutputRow done={props.assetStatus.landing} icon={Layers3} title="Landing Page" detail="Homepage, CTA sections, pricing blocks, testimonials" />
+        <OutputRow done={props.assetStatus.export} icon={Download} title="ZIP Export" detail="Logos, SVGs, code, favicon package, palette, fonts" />
+      </div>
+
+      <div className="button-grid">
+        <button className="secondary-button" disabled={!props.assetStatus.identity || props.generating} onClick={props.generateWebsiteAssets} type="button">
+          <Image size={18} /> Generate Website Assets
+        </button>
+        <button className="secondary-button" disabled={!props.assetStatus.website || props.generating} onClick={props.generateLandingPage} type="button">
+          <Globe2 size={18} /> Generate Landing Page
+        </button>
+        <button className="primary-button" disabled={!props.assetStatus.landing || props.generating} onClick={props.exportStartupKit} type="button">
+          <Download size={18} /> Export Startup Kit
+        </button>
+      </div>
+
+      <div className="memory-box">
+        <strong>Regeneration Memory</strong>
+        {props.brandProfile.memory.map((item) => <span key={item}>{item}</span>)}
+      </div>
+
+      <div className="mini-section">
+        <strong>Change style and update the ecosystem</strong>
+        <div className="mini-actions">
+          {stylePresets.map((preset) => (
+            <button key={preset.id} onClick={() => props.regenerate(preset.id)} disabled={props.generating} type="button">
+              {preset.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function BrandPreview({ profile }: { profile: BrandProfile }) {
+  return (
+    <div className="preview-shell" style={{ background: profile.colors.background, color: profile.colors.text }}>
+      <div className="logo-preview">
+        {profile.logo ? <img src={profile.logo.svgUrl} alt="" /> : <Rocket size={38} />}
+        <div>
+          <strong>{profile.businessName}</strong>
+          <span>{profile.tagline}</span>
+        </div>
+      </div>
+      <div className="mock-browser" style={{ background: profile.colors.surface }}>
+        <div className="browser-dots"><span /><span /><span /></div>
+        {profile.heroImage ? <img src={profile.heroImage.imageUrl} alt="" /> : <div className="empty-hero"><Zap size={34} /> Brand assets pending</div>}
+      </div>
+      <div className="tokens">
+        {Object.entries(profile.colors).slice(0, 4).map(([name, value]) => (
+          <div key={name}>
+            <i style={{ background: value }} />
+            <span>{name}</span>
+          </div>
+        ))}
+      </div>
+      <div className="type-row">
+        <Type size={18} />
+        <span>{profile.typography.headingFont} / {profile.typography.bodyFont}</span>
+      </div>
+    </div>
+  );
+}
+
+function OutputRow({ detail, done, icon: Icon, title }: { detail: string; done: boolean; icon: typeof Rocket; title: string }) {
+  return (
+    <article className={done ? "output-row done" : "output-row"}>
+      <Icon size={22} />
+      <div>
+        <strong>{title}</strong>
+        <span>{detail}</span>
+      </div>
+      {done ? <CheckCircle2 size={20} /> : <Sparkles size={20} />}
+    </article>
+  );
+}
+
+function SystemCard({ detail, icon: Icon, title }: { detail: string; icon: typeof Rocket; title: string }) {
+  return (
+    <article className="system-card">
+      <Icon size={24} />
+      <h3>{title}</h3>
+      <p>{detail}</p>
+    </article>
+  );
+}
+
+export { exportItems };
+
+function downloadStartupKit(profile: BrandProfile) {
+  const slug = profile.businessName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "startup-kit";
+  const files = {
+    "README.txt": `${profile.businessName} Startup Kit\n\nStyle: ${profile.style}\nTone: ${profile.tone}\nDirection: ${profile.visualDirection}\n\nThis export contains the shared brand context used by logo, favicon, hero, and landing page generators.\n`,
+    "brand-profile.json": JSON.stringify(profile, null, 2),
+    "tokens/colors.json": JSON.stringify(profile.colors, null, 2),
+    "tokens/typography.json": JSON.stringify(profile.typography, null, 2),
+    "logos/logo.svg": decodeDataSvg(profile.logo?.svgUrl),
+    "favicons/favicon.svg": decodeDataSvg(profile.favicon?.favicon32),
+    "images/hero.svg": decodeDataSvg(profile.heroImage?.imageUrl),
+    "landing-page/index.html": profile.landingPage?.html ?? "<main><h1>Generate landing page first</h1></main>"
+  };
+
+  const blob = createZip(files);
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${slug}-startup-kit.zip`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function decodeDataSvg(value?: string) {
+  if (!value) return "";
+  const [, encoded] = value.split("data:image/svg+xml;utf8,");
+  return encoded ? decodeURIComponent(encoded) : value;
+}
+
+function createZip(files: Record<string, string>) {
+  const encoder = new TextEncoder();
+  const chunks: Uint8Array[] = [];
+  const centralDirectory: Uint8Array[] = [];
+  let offset = 0;
+
+  Object.entries(files).forEach(([path, content]) => {
+    const name = encoder.encode(path);
+    const data = encoder.encode(content);
+    const crc = crc32(data);
+    const local = zipHeader(0x04034b50, 20, 0, 0, crc, data.length, data.length, name.length, 0);
+    chunks.push(local, name, data);
+    centralDirectory.push(zipCentralHeader(name, crc, data.length, offset));
+    offset += local.length + name.length + data.length;
+  });
+
+  const centralStart = offset;
+  const centralSize = centralDirectory.reduce((sum, item) => sum + item.length, 0);
+  const end = zipEnd(Object.keys(files).length, centralSize, centralStart);
+  const blobParts = [...chunks, ...centralDirectory, end].map((part) =>
+    part.buffer.slice(part.byteOffset, part.byteOffset + part.byteLength) as ArrayBuffer
+  );
+  return new Blob(blobParts, { type: "application/zip" });
+}
+
+function zipHeader(signature: number, version: number, flags: number, method: number, crc: number, compressedSize: number, size: number, nameLength: number, extraLength: number) {
+  const header = new Uint8Array(30);
+  const view = new DataView(header.buffer);
+  view.setUint32(0, signature, true);
+  view.setUint16(4, version, true);
+  view.setUint16(6, flags, true);
+  view.setUint16(8, method, true);
+  view.setUint16(10, 0, true);
+  view.setUint16(12, 0, true);
+  view.setUint32(14, crc, true);
+  view.setUint32(18, compressedSize, true);
+  view.setUint32(22, size, true);
+  view.setUint16(26, nameLength, true);
+  view.setUint16(28, extraLength, true);
+  return header;
+}
+
+function zipCentralHeader(name: Uint8Array, crc: number, size: number, offset: number) {
+  const header = new Uint8Array(46 + name.length);
+  const view = new DataView(header.buffer);
+  view.setUint32(0, 0x02014b50, true);
+  view.setUint16(4, 20, true);
+  view.setUint16(6, 20, true);
+  view.setUint32(16, crc, true);
+  view.setUint32(20, size, true);
+  view.setUint32(24, size, true);
+  view.setUint16(28, name.length, true);
+  view.setUint32(42, offset, true);
+  header.set(name, 46);
+  return header;
+}
+
+function zipEnd(count: number, centralSize: number, centralStart: number) {
+  const end = new Uint8Array(22);
+  const view = new DataView(end.buffer);
+  view.setUint32(0, 0x06054b50, true);
+  view.setUint16(8, count, true);
+  view.setUint16(10, count, true);
+  view.setUint32(12, centralSize, true);
+  view.setUint32(16, centralStart, true);
+  return end;
+}
+
+function crc32(data: Uint8Array) {
+  let crc = -1;
+  for (const byte of data) {
+    crc = (crc >>> 8) ^ crcTable[(crc ^ byte) & 0xff];
+  }
+  return (crc ^ -1) >>> 0;
+}
+
+const crcTable = Array.from({ length: 256 }, (_, index) => {
+  let value = index;
+  for (let bit = 0; bit < 8; bit += 1) {
+    value = value & 1 ? 0xedb88320 ^ (value >>> 1) : value >>> 1;
+  }
+  return value >>> 0;
+});
