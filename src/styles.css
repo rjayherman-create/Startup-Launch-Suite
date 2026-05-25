@@ -352,6 +352,7 @@ button:disabled {
   margin-top: 16px;
 }
 
+.launch-targets,
 .naming-lab {
   display: grid;
   gap: 14px;
@@ -362,9 +363,46 @@ button:disabled {
   padding: 16px;
 }
 
+.launch-targets h3,
 .naming-lab h3 {
   margin: 0;
   font-size: 20px;
+}
+
+.target-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.target-option {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  border: 1px solid #d8e0ea;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 12px;
+}
+
+.target-option input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: #0f766e;
+}
+
+.target-option strong,
+.target-option small {
+  display: block;
+}
+
+.target-option small {
+  margin-top: 4px;
+  color: #667085;
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .name-chip-grid {
@@ -407,6 +445,22 @@ button:disabled {
 .store-check-card.checked {
   border-color: #86efac;
   background: #f0fdf4;
+}
+
+.store-skip {
+  display: grid;
+  gap: 8px;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #1e3a8a;
+  padding: 14px;
+}
+
+.store-skip span {
+  color: #475467;
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 .store-check-card div {
@@ -589,6 +643,12 @@ button:disabled {
   margin-top: 16px;
 }
 
+.output-note {
+  margin: 12px 0 0;
+  color: #667085;
+  font-size: 13px;
+}
+
 .memory-box,
 .mini-section {
   display: grid;
@@ -691,6 +751,7 @@ button:disabled {
   .step-list,
   .form-grid,
   .preset-grid,
+  .target-grid,
   .store-check-grid,
   .tokens {
     grid-template-columns: 1fr;

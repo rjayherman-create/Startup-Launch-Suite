@@ -36,6 +36,11 @@ import {
 
 type BuilderStep = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 type StoreCheck = "unchecked" | "checking" | "checked";
+type LaunchTargets = {
+  website: boolean;
+  ios: boolean;
+  android: boolean;
+};
 
 const builderRoutes: Array<{ step: BuilderStep; label: string; path: string }> = [
   { step: 1, label: "Name App", path: "/name-app" },
@@ -90,6 +95,11 @@ export function App() {
   const [description, setDescription] = useState(defaultProfile.description);
   const [industry, setIndustry] = useState(defaultProfile.industry);
   const [audience, setAudience] = useState(defaultProfile.audience);
+  const [launchTargets, setLaunchTargets] = useState<LaunchTargets>({
+    website: true,
+    ios: true,
+    android: true
+  });
   const [presetId, setPresetId] = useState<StylePresetId>("startup-dark");
   const [brandProfile, setBrandProfile] = useState<BrandProfile>(defaultProfile);
   const [nameIdeas, setNameIdeas] = useState<string[]>(["LaunchPilot", "FounderForge", "StartupLift", "BrandStack"]);
@@ -106,6 +116,8 @@ export function App() {
   });
 
   const engine = useMemo(() => new StartupBrandingEngine(brandProfile), [brandProfile]);
+  const wantsApp = launchTargets.ios || launchTargets.android;
+  const wantsWebsite = launchTargets.website;
 
   useEffect(() => {
     const handlePopState = () => setStep(getStepFromPath(window.location.pathname));
@@ -143,6 +155,13 @@ export function App() {
     setStoreCheck({ ios: "unchecked", android: "unchecked" });
   }
 
+  function toggleLaunchTarget(target: keyof LaunchTargets) {
+    setLaunchTargets((current) => {
+      const next = { ...current, [target]: !current[target] };
+      return next.website || next.ios || next.android ? next : current;
+    });
+  }
+
   function checkStore(platform: "ios" | "android") {
     setStoreCheck((current) => ({ ...current, [platform]: "checking" }));
     const query = encodeURIComponent(businessName.trim());
@@ -178,6 +197,12 @@ export function App() {
   }
 
   async function generateLandingPage() {
+    if (!wantsWebsite) {
+      setAssetStatus((current) => ({ ...current, landing: true }));
+      goToStep(8);
+      return;
+    }
+
     setGenerating(true);
     await engine.generateLandingPage();
     setBrandProfile({ ...engine.getProfile() });
@@ -196,7 +221,7 @@ export function App() {
   }
 
   function exportStartupKit() {
-    downloadStartupKit(brandProfile);
+    downloadStartupKit(brandProfile, launchTargets);
     setAssetStatus((current) => ({ ...current, export: true }));
     goToStep(8);
   }
@@ -272,6 +297,7 @@ export function App() {
             description={description}
             generateNameIdeas={generateNameIdeas}
             industry={industry}
+            launchTargets={launchTargets}
             nameIdeas={nameIdeas}
             presetId={presetId}
             selectName={selectName}
@@ -284,6 +310,7 @@ export function App() {
             step={step}
             storeCheck={storeCheck}
             tagline={tagline}
+            toggleLaunchTarget={toggleLaunchTarget}
           />
           <OutputPanel
             assetStatus={assetStatus}
@@ -293,6 +320,8 @@ export function App() {
             generateWebsiteAssets={generateWebsiteAssets}
             generating={generating}
             regenerate={regenerate}
+            wantsApp={wantsApp}
+            wantsWebsite={wantsWebsite}
           />
         </div>
 
@@ -329,6 +358,7 @@ function BuilderPanel(props: {
   description: string;
   generateNameIdeas: () => void;
   industry: string;
+  launchTargets: LaunchTargets;
   nameIdeas: string[];
   presetId: StylePresetId;
   selectName: (name: string) => void;
@@ -341,7 +371,10 @@ function BuilderPanel(props: {
   step: BuilderStep;
   storeCheck: Record<"ios" | "android", StoreCheck>;
   tagline: string;
+  toggleLaunchTarget: (target: keyof LaunchTargets) => void;
 }) {
+  const wantsApp = props.launchTargets.ios || props.launchTargets.android;
+
   return (
     <section className="panel">
       <div className="section-head">
@@ -375,6 +408,36 @@ function BuilderPanel(props: {
         </label>
       </div>
 
+      <div className="launch-targets">
+        <div>
+          <p className="eyebrow">Launch target</p>
+          <h3>What are you building?</h3>
+        </div>
+        <div className="target-grid">
+          <label className="target-option">
+            <input checked={props.launchTargets.website} onChange={() => props.toggleLaunchTarget("website")} type="checkbox" />
+            <span>
+              <strong>Website</strong>
+              <small>Landing page, CTA sections, pricing, testimonials, and site export.</small>
+            </span>
+          </label>
+          <label className="target-option">
+            <input checked={props.launchTargets.ios} onChange={() => props.toggleLaunchTarget("ios")} type="checkbox" />
+            <span>
+              <strong>iOS App</strong>
+              <small>App name check, icon/favicons, App Store-ready visual direction.</small>
+            </span>
+          </label>
+          <label className="target-option">
+            <input checked={props.launchTargets.android} onChange={() => props.toggleLaunchTarget("android")} type="checkbox" />
+            <span>
+              <strong>Android App</strong>
+              <small>Google Play name check, launch assets, mobile brand consistency.</small>
+            </span>
+          </label>
+        </div>
+      </div>
+
       <div className="naming-lab">
         <div>
           <p className="eyebrow">AI app naming assistant</p>
@@ -391,18 +454,29 @@ function BuilderPanel(props: {
           ))}
         </div>
         <div className="store-check-grid">
-          <StoreCheckCard
-            detail="Search Apple App Store listings and app-name collisions before committing to brand assets."
-            onCheck={() => props.checkStore("ios")}
-            platform="iOS App Store"
-            status={props.storeCheck.ios}
-          />
-          <StoreCheckCard
-            detail="Search Google Play apps so the Android launch path does not inherit a name conflict."
-            onCheck={() => props.checkStore("android")}
-            platform="Google Play"
-            status={props.storeCheck.android}
-          />
+          {props.launchTargets.ios ? (
+            <StoreCheckCard
+              detail="Search Apple App Store listings and app-name collisions before committing to brand assets."
+              onCheck={() => props.checkStore("ios")}
+              platform="iOS App Store"
+              status={props.storeCheck.ios}
+            />
+          ) : null}
+          {props.launchTargets.android ? (
+            <StoreCheckCard
+              detail="Search Google Play apps so the Android launch path does not inherit a name conflict."
+              onCheck={() => props.checkStore("android")}
+              platform="Google Play"
+              status={props.storeCheck.android}
+            />
+          ) : null}
+          {!wantsApp ? (
+            <div className="store-skip">
+              <Globe2 size={22} />
+              <strong>App store checks skipped</strong>
+              <span>Website-only projects do not need iOS or Android name checks.</span>
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -418,6 +492,7 @@ function BuilderPanel(props: {
 
       <pre className="context-preview">{JSON.stringify({
         businessName: props.businessName,
+        launchTargets: props.launchTargets,
         storeNameChecks: props.storeCheck,
         style: stylePresets.find((item) => item.id === props.presetId)?.label,
         audience: props.audience,
@@ -436,7 +511,14 @@ function OutputPanel(props: {
   generateWebsiteAssets: () => void;
   generating: boolean;
   regenerate: (preset: StylePresetId) => void;
+  wantsApp: boolean;
+  wantsWebsite: boolean;
 }) {
+  const canExport = props.assetStatus.identity
+    && (!props.wantsApp || props.assetStatus.website)
+    && (!props.wantsWebsite || props.assetStatus.landing)
+    && !props.generating;
+
   return (
     <section className="panel">
       <div className="section-head">
@@ -449,22 +531,30 @@ function OutputPanel(props: {
 
       <div className="output-stack">
         <OutputRow done={props.assetStatus.identity} icon={Palette} title="Brand Identity" detail="Logo, favicon, colors, typography, style direction" />
-        <OutputRow done={props.assetStatus.website} icon={Image} title="Website Assets" detail="Hero image, illustrations, mockup visual system" />
-        <OutputRow done={props.assetStatus.landing} icon={Layers3} title="Landing Page" detail="Homepage, CTA sections, pricing blocks, testimonials" />
+        <OutputRow done={props.assetStatus.website} icon={Image} title={props.wantsApp ? "Website/App Assets" : "Website Assets"} detail={props.wantsApp ? "Hero image, app icon direction, launch visuals, mockup system" : "Hero image, illustrations, mockup visual system"} />
+        {props.wantsWebsite ? (
+          <OutputRow done={props.assetStatus.landing} icon={Layers3} title="Landing Page" detail="Homepage, CTA sections, pricing blocks, testimonials" />
+        ) : (
+          <OutputRow done={true} icon={Layers3} title="Landing Page Skipped" detail="App-only launch kits do not require a website landing page." />
+        )}
         <OutputRow done={props.assetStatus.export} icon={Download} title="ZIP Export" detail="Logos, SVGs, code, favicon package, palette, fonts" />
       </div>
 
       <div className="button-grid">
         <button className="secondary-button" disabled={!props.assetStatus.identity || props.generating} onClick={props.generateWebsiteAssets} type="button">
-          <Image size={18} /> Generate Website Assets
+          <Image size={18} /> {props.wantsApp ? "Generate Launch Assets" : "Generate Website Assets"}
         </button>
-        <button className="secondary-button" disabled={!props.assetStatus.website || props.generating} onClick={props.generateLandingPage} type="button">
+        <button className="secondary-button" disabled={!props.wantsWebsite || !props.assetStatus.website || props.generating} onClick={props.generateLandingPage} type="button">
           <Globe2 size={18} /> Generate Landing Page
         </button>
-        <button className="primary-button" disabled={!props.assetStatus.landing || props.generating} onClick={props.exportStartupKit} type="button">
+        <button className="primary-button" disabled={!canExport} onClick={props.exportStartupKit} type="button">
           <Download size={18} /> Export Startup Kit
         </button>
       </div>
+
+      {!props.wantsWebsite ? (
+        <p className="output-note">Landing page generation is disabled because this kit is set to app-only.</p>
+      ) : null}
 
       <div className="memory-box">
         <strong>Regeneration Memory</strong>
@@ -557,11 +647,12 @@ function SystemCard({ detail, icon: Icon, title }: { detail: string; icon: typeo
 
 export { exportItems };
 
-function downloadStartupKit(profile: BrandProfile) {
+function downloadStartupKit(profile: BrandProfile, launchTargets: LaunchTargets) {
   const slug = profile.businessName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "startup-kit";
   const files = {
-    "README.txt": `${profile.businessName} Startup Kit\n\nStyle: ${profile.style}\nTone: ${profile.tone}\nDirection: ${profile.visualDirection}\n\nThis export contains the shared brand context used by logo, favicon, hero, and landing page generators.\n`,
+    "README.txt": `${profile.businessName} Startup Kit\n\nLaunch targets:\n- Website: ${launchTargets.website ? "yes" : "no"}\n- iOS App: ${launchTargets.ios ? "yes" : "no"}\n- Android App: ${launchTargets.android ? "yes" : "no"}\n\nStyle: ${profile.style}\nTone: ${profile.tone}\nDirection: ${profile.visualDirection}\n\nThis export contains the shared brand context used by logo, favicon, hero, and landing page generators.\n`,
     "brand-profile.json": JSON.stringify(profile, null, 2),
+    "launch-targets.json": JSON.stringify(launchTargets, null, 2),
     "tokens/colors.json": JSON.stringify(profile.colors, null, 2),
     "tokens/typography.json": JSON.stringify(profile.typography, null, 2),
     "logos/logo.svg": decodeDataSvg(profile.logo?.svgUrl),
