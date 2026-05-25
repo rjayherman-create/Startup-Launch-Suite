@@ -546,6 +546,68 @@ button:disabled {
   padding: 18px;
 }
 
+.brand-generator-stack,
+.hero-generator-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.generator-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.generator-card {
+  display: grid;
+  gap: 12px;
+  border: 1px solid #d8e0ea;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 14px;
+}
+
+.generator-preview {
+  display: grid;
+  min-height: 124px;
+  place-items: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #0f766e;
+}
+
+.generator-preview img {
+  width: 96px;
+  height: 96px;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.generator-card h3 {
+  margin: 8px 0 6px;
+  font-size: 18px;
+}
+
+.generator-card p {
+  margin: 0;
+  color: #667085;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.status-badge {
+  display: inline-flex;
+  width: max-content;
+  border-radius: 999px;
+  background: #edf7f5;
+  color: #0f766e;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
 .logo-preview img {
   width: 54px;
   height: 54px;
@@ -780,6 +842,7 @@ button:disabled {
   .step-list,
   .form-grid,
   .preset-grid,
+  .generator-grid,
   .target-grid,
   .store-check-grid,
   .tokens {

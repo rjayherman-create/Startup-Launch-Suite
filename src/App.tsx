@@ -202,12 +202,52 @@ export function App() {
     setGenerating(false);
   }
 
+  async function generateLogoAsset() {
+    setGenerating(true);
+    const profile = createBrandProfile({ businessName, tagline, description, industry, audience, presetId });
+    const nextEngine = new StartupBrandingEngine(profile);
+    await nextEngine.generateLogo();
+    setBrandProfile(nextEngine.getProfile());
+    setAssetStatus((current) => ({ ...current, identity: false }));
+    goToStep(5);
+    setGenerating(false);
+  }
+
+  async function generateFaviconAsset() {
+    setGenerating(true);
+    const profile = brandProfile.logo
+      ? brandProfile
+      : createBrandProfile({ businessName, tagline, description, industry, audience, presetId });
+    const nextEngine = new StartupBrandingEngine(profile);
+    if (!nextEngine.getProfile().logo) {
+      await nextEngine.generateLogo();
+    }
+    await nextEngine.generateFavicon();
+    setBrandProfile(nextEngine.getProfile());
+    setAssetStatus((current) => ({ ...current, identity: Boolean(nextEngine.getProfile().logo && nextEngine.getProfile().favicon) }));
+    goToStep(5);
+    setGenerating(false);
+  }
+
   async function generateWebsiteAssets() {
     setGenerating(true);
     await engine.generateHeroImage();
     setBrandProfile({ ...engine.getProfile() });
     setAssetStatus((current) => ({ ...current, website: true }));
     goToStep(6);
+    setGenerating(false);
+  }
+
+  async function generateHeroImageAsset() {
+    setGenerating(true);
+    const nextEngine = new StartupBrandingEngine(brandProfile);
+    await nextEngine.generateHeroImage();
+    setBrandProfile({ ...nextEngine.getProfile() });
+    setAssetStatus((current) => ({ ...current, website: true }));
+    if (window.location.pathname !== "/website-assets") {
+      window.history.pushState({ step: 6 }, "", "/website-assets");
+    }
+    setStep(6);
     setGenerating(false);
   }
 
@@ -296,7 +336,10 @@ export function App() {
           description={description}
           exportStartupKit={exportStartupKit}
           generateIdentity={generateIdentity}
+          generateFaviconAsset={generateFaviconAsset}
+          generateHeroImageAsset={generateHeroImageAsset}
           generateLandingPage={generateLandingPage}
+          generateLogoAsset={generateLogoAsset}
           generateNameIdeas={generateNameIdeas}
           generateWebsiteAssets={generateWebsiteAssets}
           generating={generating}
@@ -333,7 +376,10 @@ function StepPage(props: {
   description: string;
   exportStartupKit: () => void;
   generateIdentity: () => void;
+  generateFaviconAsset: () => void;
+  generateHeroImageAsset: () => void;
   generateLandingPage: () => void;
+  generateLogoAsset: () => void;
   generateNameIdeas: () => void;
   generateWebsiteAssets: () => void;
   generating: boolean;
@@ -401,7 +447,27 @@ function StepPage(props: {
             </button>
           </div>
         </div>
-        <BrandPreview profile={props.brandProfile} />
+        <div className="brand-generator-stack">
+          <BrandPreview profile={props.brandProfile} />
+          <div className="generator-grid">
+            <GeneratorCard
+              actionLabel="Create Logo"
+              detail="Pulls app name, style, colors, industry, and tone from the shared brand context."
+              imageUrl={props.brandProfile.logo?.svgUrl}
+              onGenerate={props.generateLogoAsset}
+              status={props.brandProfile.logo ? "Created" : "Not created"}
+              title="Logo Creator"
+            />
+            <GeneratorCard
+              actionLabel="Create Favicon"
+              detail="Uses the current logo and palette to produce favicon sizes and Apple touch icon source."
+              imageUrl={props.brandProfile.favicon?.favicon32}
+              onGenerate={props.generateFaviconAsset}
+              status={props.brandProfile.favicon ? "Created" : "Waiting for logo"}
+              title="Favicon Creator"
+            />
+          </div>
+        </div>
       </section>
     );
   }
@@ -413,7 +479,7 @@ function StepPage(props: {
         brandProfile={props.brandProfile}
         exportStartupKit={props.exportStartupKit}
         generateLandingPage={props.generateLandingPage}
-        generateWebsiteAssets={props.generateWebsiteAssets}
+        generateWebsiteAssets={props.generateHeroImageAsset}
         generating={props.generating}
         regenerate={props.regenerate}
         step={props.step}
@@ -621,7 +687,17 @@ function OutputPanel(props: {
 
       <div className="output-stack">
         {props.step === 6 ? (
-          <OutputRow done={props.assetStatus.website} icon={Image} id="section-website-assets" title={props.wantsApp ? "Website/App Assets" : "Website Assets"} detail={props.wantsApp ? "Hero image, app icon direction, launch visuals, mockup system" : "Hero image, illustrations, mockup visual system"} />
+          <div className="hero-generator-panel" id="section-website-assets">
+            <GeneratorCard
+              actionLabel="Create Hero Image"
+              detail={props.wantsApp ? "Pulls app name, audience, style, typography, colors, and tone into the hero image generator." : "Pulls app name, audience, style, typography, colors, and tone into the website hero generator."}
+              imageUrl={props.brandProfile.heroImage?.imageUrl}
+              onGenerate={props.generateWebsiteAssets}
+              status={props.brandProfile.heroImage ? "Created" : "Not created"}
+              title="Hero Image Creator"
+            />
+            <OutputRow done={props.assetStatus.website} icon={Image} title={props.wantsApp ? "Website/App Assets" : "Website Assets"} detail={props.wantsApp ? "Hero image, app icon direction, launch visuals, mockup system" : "Hero image, illustrations, mockup visual system"} />
+          </div>
         ) : null}
         {props.step === 7 && props.wantsWebsite ? (
           <OutputRow done={props.assetStatus.landing} icon={Layers3} id="section-landing-page" title="Landing Page" detail="Homepage, CTA sections, pricing blocks, testimonials" />
@@ -635,10 +711,8 @@ function OutputPanel(props: {
       </div>
 
       <div className="button-grid">
-        {props.step === 6 ? (
-        <button className="secondary-button" disabled={!props.assetStatus.identity || props.generating} onClick={props.generateWebsiteAssets} type="button">
-          <Image size={18} /> {props.wantsApp ? "Generate Launch Assets" : "Generate Website Assets"}
-        </button>
+        {props.step === 6 && !props.assetStatus.identity ? (
+          <p className="output-note">Generate the brand identity first so the hero image can pull the logo, colors, typography, and style direction.</p>
         ) : null}
         {props.step === 7 ? (
         <button className="secondary-button" disabled={!props.wantsWebsite || !props.assetStatus.website || props.generating} onClick={props.generateLandingPage} type="button">
@@ -691,6 +765,28 @@ function StoreCheckCard({ detail, onCheck, platform, status }: { detail: string;
       <p>{detail}</p>
       <button className="secondary-button" onClick={onCheck} type="button">
         <SearchCheck size={18} /> {label} <ExternalLink size={15} />
+      </button>
+    </article>
+  );
+}
+
+function GeneratorCard({ actionLabel, detail, imageUrl, onGenerate, status, title }: { actionLabel: string; detail: string; imageUrl?: string; onGenerate: () => void; status: string; title: string }) {
+  return (
+    <article className="generator-card">
+      <div className="generator-preview">
+        {imageUrl ? <img src={imageUrl} alt="" /> : <Sparkles size={28} />}
+      </div>
+      <div>
+        <span className="status-badge">{status}</span>
+        <h3>{title}</h3>
+        <p>{detail}</p>
+      </div>
+      <button className="secondary-button" onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onGenerate();
+      }} type="button">
+        <Wand2 size={18} /> {actionLabel}
       </button>
     </article>
   );
