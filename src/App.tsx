@@ -191,7 +191,7 @@ export function App() {
         <nav className="step-list" aria-label="Startup builder steps">
           {[
             "Name App",
-            "Describe Startup",
+            "Describe App",
             "Choose Style",
             "Store Check",
             "Brand Identity",
@@ -351,7 +351,7 @@ function BuilderPanel(props: {
           <input value={props.audience} onChange={(event) => props.setAudience(event.target.value)} />
         </label>
         <label className="wide">
-          <span>Describe Startup</span>
+          <span>Describe App</span>
           <textarea value={props.description} onChange={(event) => props.setDescription(event.target.value)} rows={5} />
         </label>
       </div>
