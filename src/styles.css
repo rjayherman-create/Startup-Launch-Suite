@@ -729,6 +729,44 @@ button:disabled {
   font-size: 13px;
 }
 
+.code-workspace {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+  border: 1px solid #d8e0ea;
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 14px;
+}
+
+.code-workspace .section-head {
+  margin-bottom: 0;
+}
+
+.code-workspace h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.code-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.code-editor {
+  width: 100%;
+  min-height: 360px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #0f172a;
+  color: #d1fae5;
+  font: 13px/1.55 ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  padding: 14px;
+  resize: vertical;
+  tab-size: 2;
+}
+
 .memory-box,
 .mini-section {
   display: grid;

@@ -118,6 +118,8 @@ export function App() {
     ios: "unchecked",
     android: "unchecked"
   });
+  const [codeDraft, setCodeDraft] = useState(defaultLandingCode(defaultProfile));
+  const [clipboardStatus, setClipboardStatus] = useState("");
   const [generating, setGenerating] = useState(false);
   const [assetStatus, setAssetStatus] = useState({
     identity: false,
@@ -260,7 +262,9 @@ export function App() {
 
     setGenerating(true);
     await engine.generateLandingPage();
-    setBrandProfile({ ...engine.getProfile() });
+    const nextProfile = { ...engine.getProfile() };
+    setBrandProfile(nextProfile);
+    setCodeDraft(nextProfile.landingPage?.html ?? defaultLandingCode(nextProfile));
     setAssetStatus((current) => ({ ...current, landing: true }));
     goToStep(7);
     setGenerating(false);
@@ -276,9 +280,22 @@ export function App() {
   }
 
   function exportStartupKit() {
-    downloadStartupKit(brandProfile, launchTargets);
+    downloadStartupKit(brandProfile, launchTargets, codeDraft);
     setAssetStatus((current) => ({ ...current, export: true }));
     goToStep(8);
+  }
+
+  async function copyCodeDraft() {
+    await navigator.clipboard.writeText(codeDraft);
+    setClipboardStatus("Copied code to clipboard");
+    window.setTimeout(() => setClipboardStatus(""), 1800);
+  }
+
+  async function cutCodeDraft() {
+    await navigator.clipboard.writeText(codeDraft);
+    setCodeDraft("");
+    setClipboardStatus("Cut code to clipboard");
+    window.setTimeout(() => setClipboardStatus(""), 1800);
   }
 
   const progress = Math.round((Object.values(assetStatus).filter(Boolean).length / 4) * 100);
@@ -333,6 +350,10 @@ export function App() {
           brandProfile={brandProfile}
           businessName={businessName}
           checkStore={checkStore}
+          clipboardStatus={clipboardStatus}
+          codeDraft={codeDraft}
+          copyCodeDraft={copyCodeDraft}
+          cutCodeDraft={cutCodeDraft}
           description={description}
           exportStartupKit={exportStartupKit}
           generateIdentity={generateIdentity}
@@ -351,6 +372,7 @@ export function App() {
           selectName={selectName}
           setAudience={setAudience}
           setBusinessName={setBusinessName}
+          setCodeDraft={setCodeDraft}
           setDescription={setDescription}
           setIndustry={setIndustry}
           setPresetId={setPresetId}
@@ -373,6 +395,10 @@ function StepPage(props: {
   brandProfile: BrandProfile;
   businessName: string;
   checkStore: (platform: "ios" | "android") => void;
+  clipboardStatus: string;
+  codeDraft: string;
+  copyCodeDraft: () => void;
+  cutCodeDraft: () => void;
   description: string;
   exportStartupKit: () => void;
   generateIdentity: () => void;
@@ -391,6 +417,7 @@ function StepPage(props: {
   selectName: (name: string) => void;
   setAudience: (value: string) => void;
   setBusinessName: (value: string) => void;
+  setCodeDraft: (value: string) => void;
   setDescription: (value: string) => void;
   setIndustry: (value: string) => void;
   setPresetId: (value: StylePresetId) => void;
@@ -477,11 +504,16 @@ function StepPage(props: {
       <OutputPanel
         assetStatus={props.assetStatus}
         brandProfile={props.brandProfile}
+        clipboardStatus={props.clipboardStatus}
+        codeDraft={props.codeDraft}
+        copyCodeDraft={props.copyCodeDraft}
+        cutCodeDraft={props.cutCodeDraft}
         exportStartupKit={props.exportStartupKit}
         generateLandingPage={props.generateLandingPage}
         generateWebsiteAssets={props.generateHeroImageAsset}
         generating={props.generating}
         regenerate={props.regenerate}
+        setCodeDraft={props.setCodeDraft}
         step={props.step}
         wantsApp={props.wantsApp}
         wantsWebsite={props.wantsWebsite}
@@ -661,11 +693,16 @@ function BuilderPanel(props: {
 function OutputPanel(props: {
   assetStatus: { identity: boolean; website: boolean; landing: boolean; export: boolean };
   brandProfile: BrandProfile;
+  clipboardStatus: string;
+  codeDraft: string;
+  copyCodeDraft: () => void;
+  cutCodeDraft: () => void;
   exportStartupKit: () => void;
   generateLandingPage: () => void;
   generateWebsiteAssets: () => void;
   generating: boolean;
   regenerate: (preset: StylePresetId) => void;
+  setCodeDraft: (value: string) => void;
   step: BuilderStep;
   wantsApp: boolean;
   wantsWebsite: boolean;
@@ -728,6 +765,33 @@ function OutputPanel(props: {
 
       {props.step === 7 && !props.wantsWebsite ? (
         <p className="output-note">Landing page generation is disabled because this kit is set to app-only.</p>
+      ) : null}
+
+      {props.step === 8 ? (
+        <section className="code-workspace">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">Editable code</p>
+              <h3>Landing page code</h3>
+            </div>
+            <div className="code-actions">
+              <button className="secondary-button" onClick={props.copyCodeDraft} type="button">
+                <FileCode2 size={18} /> Copy
+              </button>
+              <button className="secondary-button" onClick={props.cutCodeDraft} type="button">
+                <Archive size={18} /> Cut
+              </button>
+            </div>
+          </div>
+          <textarea
+            aria-label="Editable landing page code"
+            className="code-editor"
+            onChange={(event) => props.setCodeDraft(event.target.value)}
+            spellCheck={false}
+            value={props.codeDraft}
+          />
+          {props.clipboardStatus ? <p className="output-note">{props.clipboardStatus}</p> : null}
+        </section>
       ) : null}
 
       {props.step === 8 ? (
@@ -847,7 +911,7 @@ function SystemCard({ detail, icon: Icon, title }: { detail: string; icon: typeo
 
 export { exportItems };
 
-function downloadStartupKit(profile: BrandProfile, launchTargets: LaunchTargets) {
+function downloadStartupKit(profile: BrandProfile, launchTargets: LaunchTargets, landingPageCode: string) {
   const slug = profile.businessName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "startup-kit";
   const files = {
     "README.txt": `${profile.businessName} Startup Kit\n\nLaunch targets:\n- Website: ${launchTargets.website ? "yes" : "no"}\n- iOS App: ${launchTargets.ios ? "yes" : "no"}\n- Android App: ${launchTargets.android ? "yes" : "no"}\n\nStyle: ${profile.style}\nTone: ${profile.tone}\nDirection: ${profile.visualDirection}\n\nThis export contains the shared brand context used by logo, favicon, hero, and landing page generators.\n`,
@@ -858,7 +922,7 @@ function downloadStartupKit(profile: BrandProfile, launchTargets: LaunchTargets)
     "logos/logo.svg": decodeDataSvg(profile.logo?.svgUrl),
     "favicons/favicon.svg": decodeDataSvg(profile.favicon?.favicon32),
     "images/hero.svg": decodeDataSvg(profile.heroImage?.imageUrl),
-    "landing-page/index.html": profile.landingPage?.html ?? "<main><h1>Generate landing page first</h1></main>"
+    "landing-page/index.html": landingPageCode || defaultLandingCode(profile)
   };
 
   const blob = createZip(files);
@@ -876,6 +940,71 @@ function decodeDataSvg(value?: string) {
   if (!value) return "";
   const [, encoded] = value.split("data:image/svg+xml;utf8,");
   return encoded ? decodeURIComponent(encoded) : value;
+}
+
+function defaultLandingCode(profile: BrandProfile) {
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>${profile.businessName}</title>
+    <style>
+      body {
+        margin: 0;
+        background: ${profile.colors.background};
+        color: ${profile.colors.text};
+        font-family: ${profile.typography.bodyFont}, system-ui, sans-serif;
+      }
+
+      main {
+        display: grid;
+        min-height: 100vh;
+        place-items: center;
+        padding: 48px;
+      }
+
+      section {
+        max-width: 880px;
+      }
+
+      h1 {
+        margin: 0 0 16px;
+        font-family: ${profile.typography.headingFont}, system-ui, sans-serif;
+        font-size: clamp(44px, 8vw, 96px);
+        line-height: 0.95;
+      }
+
+      p {
+        max-width: 680px;
+        color: ${profile.colors.text};
+        font-size: 20px;
+        line-height: 1.6;
+        opacity: 0.82;
+      }
+
+      a {
+        display: inline-flex;
+        margin-top: 24px;
+        border-radius: 8px;
+        background: ${profile.colors.primary};
+        color: ${profile.colors.text};
+        padding: 14px 18px;
+        font-weight: 800;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section>
+        <h1>${profile.businessName}</h1>
+        <p>${profile.tagline || profile.description}</p>
+        <a href="#cta">Start now</a>
+      </section>
+    </main>
+  </body>
+</html>`;
 }
 
 function createZip(files: Record<string, string>) {
