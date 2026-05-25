@@ -34,6 +34,10 @@ button:disabled {
   opacity: 0.55;
 }
 
+[id^="section-"] {
+  scroll-margin-top: 24px;
+}
+
 .app-shell {
   display: grid;
   min-height: 100vh;
@@ -742,6 +746,10 @@ button:disabled {
 
   .suite-positioning {
     display: none;
+  }
+
+  [id^="section-"] {
+    scroll-margin-top: 220px;
   }
 }
 

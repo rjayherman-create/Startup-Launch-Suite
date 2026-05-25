@@ -53,6 +53,17 @@ const builderRoutes: Array<{ step: BuilderStep; label: string; path: string }> =
   { step: 8, label: "Export Kit", path: "/export-kit" }
 ];
 
+const routeSectionIds: Record<BuilderStep, string> = {
+  1: "section-name-app",
+  2: "section-describe-app",
+  3: "section-choose-style",
+  4: "section-store-check",
+  5: "section-brand-identity",
+  6: "section-website-assets",
+  7: "section-landing-page",
+  8: "section-export-kit"
+};
+
 const defaultProfile = createBrandProfile({
   businessName: "LaunchPilot",
   tagline: "AI Startup Launch System",
@@ -124,6 +135,10 @@ export function App() {
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
+
+  useEffect(() => {
+    window.requestAnimationFrame(() => scrollToStepSection(step));
+  }, [step]);
 
   function goToStep(nextStep: BuilderStep, mode: "push" | "replace" = "push") {
     const route = builderRoutes.find((item) => item.step === nextStep) ?? builderRoutes[0];
@@ -272,7 +287,7 @@ export function App() {
           </div>
         </header>
 
-        <section className="hero-band">
+        <section className="hero-band" id="section-brand-identity">
           <div className="hero-copy">
             <p className="eyebrow">Master app workflow</p>
             <h2>{brandProfile.businessName || "Your Startup"} is being assembled as one launch-ready ecosystem.</h2>
@@ -386,7 +401,7 @@ function BuilderPanel(props: {
       </div>
 
       <div className="form-grid">
-        <label>
+        <label id="section-name-app">
           <span>App Name</span>
           <input value={props.businessName} onChange={(event) => props.setBusinessName(event.target.value)} />
         </label>
@@ -402,7 +417,7 @@ function BuilderPanel(props: {
           <span>Audience</span>
           <input value={props.audience} onChange={(event) => props.setAudience(event.target.value)} />
         </label>
-        <label className="wide">
+        <label className="wide" id="section-describe-app">
           <span>Describe App</span>
           <textarea value={props.description} onChange={(event) => props.setDescription(event.target.value)} rows={5} />
         </label>
@@ -453,7 +468,7 @@ function BuilderPanel(props: {
             </button>
           ))}
         </div>
-        <div className="store-check-grid">
+        <div className="store-check-grid" id="section-store-check">
           {props.launchTargets.ios ? (
             <StoreCheckCard
               detail="Search Apple App Store listings and app-name collisions before committing to brand assets."
@@ -480,7 +495,7 @@ function BuilderPanel(props: {
         </div>
       </div>
 
-      <div className="preset-grid">
+      <div className="preset-grid" id="section-choose-style">
         {stylePresets.map((preset) => (
           <button className={props.presetId === preset.id ? "preset active" : "preset"} key={preset.id} onClick={() => props.setPresetId(preset.id)} type="button">
             <span style={{ background: preset.colors.primary }} />
@@ -530,14 +545,14 @@ function OutputPanel(props: {
       </div>
 
       <div className="output-stack">
-        <OutputRow done={props.assetStatus.identity} icon={Palette} title="Brand Identity" detail="Logo, favicon, colors, typography, style direction" />
-        <OutputRow done={props.assetStatus.website} icon={Image} title={props.wantsApp ? "Website/App Assets" : "Website Assets"} detail={props.wantsApp ? "Hero image, app icon direction, launch visuals, mockup system" : "Hero image, illustrations, mockup visual system"} />
+        <OutputRow done={props.assetStatus.identity} icon={Palette} id="section-brand-identity-output" title="Brand Identity" detail="Logo, favicon, colors, typography, style direction" />
+        <OutputRow done={props.assetStatus.website} icon={Image} id="section-website-assets" title={props.wantsApp ? "Website/App Assets" : "Website Assets"} detail={props.wantsApp ? "Hero image, app icon direction, launch visuals, mockup system" : "Hero image, illustrations, mockup visual system"} />
         {props.wantsWebsite ? (
-          <OutputRow done={props.assetStatus.landing} icon={Layers3} title="Landing Page" detail="Homepage, CTA sections, pricing blocks, testimonials" />
+          <OutputRow done={props.assetStatus.landing} icon={Layers3} id="section-landing-page" title="Landing Page" detail="Homepage, CTA sections, pricing blocks, testimonials" />
         ) : (
-          <OutputRow done={true} icon={Layers3} title="Landing Page Skipped" detail="App-only launch kits do not require a website landing page." />
+          <OutputRow done={true} icon={Layers3} id="section-landing-page" title="Landing Page Skipped" detail="App-only launch kits do not require a website landing page." />
         )}
-        <OutputRow done={props.assetStatus.export} icon={Download} title="ZIP Export" detail="Logos, SVGs, code, favicon package, palette, fonts" />
+        <OutputRow done={props.assetStatus.export} icon={Download} id="section-export-kit" title="ZIP Export" detail="Logos, SVGs, code, favicon package, palette, fonts" />
       </div>
 
       <div className="button-grid">
@@ -622,9 +637,9 @@ function BrandPreview({ profile }: { profile: BrandProfile }) {
   );
 }
 
-function OutputRow({ detail, done, icon: Icon, title }: { detail: string; done: boolean; icon: typeof Rocket; title: string }) {
+function OutputRow({ detail, done, icon: Icon, id, title }: { detail: string; done: boolean; icon: typeof Rocket; id?: string; title: string }) {
   return (
-    <article className={done ? "output-row done" : "output-row"}>
+    <article className={done ? "output-row done" : "output-row"} id={id}>
       <Icon size={22} />
       <div>
         <strong>{title}</strong>
@@ -765,4 +780,14 @@ const crcTable = Array.from({ length: 256 }, (_, index) => {
 function getStepFromPath(pathname: string): BuilderStep {
   const normalizedPath = pathname.replace(/\/+$/, "") || "/";
   return builderRoutes.find((route) => route.path === normalizedPath)?.step ?? 1;
+}
+
+function scrollToStepSection(step: BuilderStep) {
+  const section = document.getElementById(routeSectionIds[step]);
+  if (!section) return;
+
+  section.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
 }
