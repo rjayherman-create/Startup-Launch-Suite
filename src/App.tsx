@@ -63,7 +63,7 @@ const systemCards = [
 ];
 
 const pipeline = [
-  "Name and store check",
+  "Name app and store check",
   "Generate logo",
   "Extract colors, typography, style direction",
   "Send brand context to generators",
@@ -190,7 +190,7 @@ export function App() {
 
         <nav className="step-list" aria-label="Startup builder steps">
           {[
-            "Name Startup",
+            "Name App",
             "Describe Startup",
             "Choose Style",
             "Store Check",
@@ -335,7 +335,7 @@ function BuilderPanel(props: {
 
       <div className="form-grid">
         <label>
-          <span>Startup Name</span>
+          <span>App Name</span>
           <input value={props.businessName} onChange={(event) => props.setBusinessName(event.target.value)} />
         </label>
         <label>
@@ -358,11 +358,11 @@ function BuilderPanel(props: {
 
       <div className="naming-lab">
         <div>
-          <p className="eyebrow">AI naming assistant</p>
-          <h3>Find a name before generating the brand.</h3>
+          <p className="eyebrow">AI app naming assistant</p>
+          <h3>Find an app name before generating the brand.</h3>
         </div>
         <button className="secondary-button" onClick={props.generateNameIdeas} type="button">
-          <Sparkles size={18} /> Generate Name Ideas
+          <Sparkles size={18} /> Generate App Names
         </button>
         <div className="name-chip-grid">
           {props.nameIdeas.map((name) => (
