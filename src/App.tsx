@@ -130,6 +130,8 @@ export function App() {
   const [logoMood, setLogoMood] = useState<LogoMood>("Modern SaaS");
   const [presetId, setPresetId] = useState<StylePresetId>("startup-dark");
   const [brandProfile, setBrandProfile] = useState<BrandProfile>(defaultProfile);
+  const [aiEditPrompt, setAiEditPrompt] = useState("");
+  const [aiEditStatus, setAiEditStatus] = useState("");
   const [nameIdeas, setNameIdeas] = useState<string[]>(["LaunchPilot", "FounderForge", "StartupLift", "BrandStack"]);
   const [storeCheck, setStoreCheck] = useState<Record<"ios" | "android", StoreCheck>>({
     ios: "unchecked",
@@ -296,6 +298,102 @@ export function App() {
     setGenerating(false);
   }
 
+  function updateBrandColor(name: keyof BrandProfile["colors"], value: string) {
+    setBrandProfile((current) => ({
+      ...current,
+      colors: {
+        ...current.colors,
+        [name]: value
+      },
+      revision: current.revision + 1,
+      memory: [`${name} color edited to ${value}.`, ...current.memory].slice(0, 8)
+    }));
+    setAssetStatus((current) => ({ ...current, website: false, landing: false, export: false }));
+  }
+
+  function updateBrandStyle(value: string) {
+    setBrandProfile((current) => ({
+      ...current,
+      visualDirection: value,
+      style: value.split(",")[0]?.trim() || current.style,
+      revision: current.revision + 1,
+      memory: ["Style direction edited manually.", ...current.memory].slice(0, 8)
+    }));
+    setAssetStatus((current) => ({ ...current, website: false, landing: false, export: false }));
+  }
+
+  function applyAiBrandEdit() {
+    const edit = aiEditPrompt.toLowerCase();
+    if (!edit.trim()) {
+      setAiEditStatus("Describe the change you want first.");
+      return;
+    }
+
+    setBrandProfile((current) => {
+      const nextColors = { ...current.colors };
+      let nextTone = current.tone;
+      let nextStyle = current.style;
+      let nextDirection = current.visualDirection;
+
+      if (edit.includes("purple")) {
+        nextColors.primary = "#7c3aed";
+        nextColors.secondary = "#2563eb";
+        nextColors.accent = "#f97316";
+      }
+      if (edit.includes("green")) {
+        nextColors.primary = "#0f766e";
+        nextColors.secondary = "#14532d";
+        nextColors.accent = "#eab308";
+      }
+      if (edit.includes("blue")) {
+        nextColors.primary = "#2563eb";
+        nextColors.secondary = "#0891b2";
+        nextColors.accent = "#f97316";
+      }
+      if (edit.includes("dark")) {
+        nextColors.background = "#08111f";
+        nextColors.surface = "#111827";
+        nextColors.text = "#f8fafc";
+        nextDirection = "dark high-contrast launch system with luminous app and website surfaces";
+      }
+      if (edit.includes("light") || edit.includes("bright")) {
+        nextColors.background = "#f8fafc";
+        nextColors.surface = "#ffffff";
+        nextColors.text = "#172033";
+        nextDirection = "bright clean product launch system with crisp trustworthy surfaces";
+      }
+      if (edit.includes("premium")) {
+        nextTone = "Premium";
+        nextStyle = "Premium Launch";
+        nextDirection = "premium, investor-ready launch identity with calm trust cues and polished conversion surfaces";
+      }
+      if (edit.includes("playful") || edit.includes("fun")) {
+        nextTone = "Energetic";
+        nextStyle = "Playful App Launch";
+        nextDirection = "energetic app launch identity with friendly shapes, confident color, and approachable conversion sections";
+      }
+      if (edit.includes("minimal") || edit.includes("clean")) {
+        nextTone = "Clear";
+        nextStyle = "Clean SaaS";
+        nextDirection = "minimal SaaS launch identity with restrained panels, clean typography, and direct product clarity";
+      }
+
+      return {
+        ...current,
+        colors: nextColors,
+        tone: nextTone,
+        style: nextStyle,
+        visualDirection: nextDirection,
+        revision: current.revision + 1,
+        memory: [`AI edit applied: "${aiEditPrompt}".`, ...current.memory].slice(0, 8)
+      };
+    });
+
+    setAssetStatus((current) => ({ ...current, website: false, landing: false, export: false }));
+    setAiEditStatus("AI edit applied to brand context.");
+    window.setTimeout(() => setAiEditStatus(""), 2200);
+  }
+
   function exportStartupKit() {
     downloadStartupKit(brandProfile, launchTargets, codeDraft);
     setAssetStatus((current) => ({ ...current, export: true }));
@@ -363,6 +461,9 @@ export function App() {
 
         <StepPage
           assetStatus={assetStatus}
+          aiEditPrompt={aiEditPrompt}
+          aiEditStatus={aiEditStatus}
+          applyAiBrandEdit={applyAiBrandEdit}
           audience={audience}
           brandProfile={brandProfile}
           businessName={businessName}
@@ -391,6 +492,7 @@ export function App() {
           regenerate={regenerate}
           selectName={selectName}
           setAudience={setAudience}
+          setAiEditPrompt={setAiEditPrompt}
           setBusinessName={setBusinessName}
           setCodeDraft={setCodeDraft}
           setDescription={setDescription}
@@ -404,6 +506,8 @@ export function App() {
           storeCheck={storeCheck}
           tagline={tagline}
           toggleLaunchTarget={toggleLaunchTarget}
+          updateBrandColor={updateBrandColor}
+          updateBrandStyle={updateBrandStyle}
           wantsApp={wantsApp}
           wantsWebsite={wantsWebsite}
         />
@@ -414,6 +518,9 @@ export function App() {
 
 function StepPage(props: {
   assetStatus: { identity: boolean; website: boolean; landing: boolean; export: boolean };
+  aiEditPrompt: string;
+  aiEditStatus: string;
+  applyAiBrandEdit: () => void;
   audience: string;
   brandProfile: BrandProfile;
   businessName: string;
@@ -442,6 +549,7 @@ function StepPage(props: {
   regenerate: (preset: StylePresetId) => void;
   selectName: (name: string) => void;
   setAudience: (value: string) => void;
+  setAiEditPrompt: (value: string) => void;
   setBusinessName: (value: string) => void;
   setCodeDraft: (value: string) => void;
   setDescription: (value: string) => void;
@@ -455,6 +563,8 @@ function StepPage(props: {
   storeCheck: Record<"ios" | "android", StoreCheck>;
   tagline: string;
   toggleLaunchTarget: (target: keyof LaunchTargets) => void;
+  updateBrandColor: (name: keyof BrandProfile["colors"], value: string) => void;
+  updateBrandStyle: (value: string) => void;
   wantsApp: boolean;
   wantsWebsite: boolean;
 }) {
@@ -534,6 +644,9 @@ function StepPage(props: {
     <div className="step-page">
       <OutputPanel
         assetStatus={props.assetStatus}
+        aiEditPrompt={props.aiEditPrompt}
+        aiEditStatus={props.aiEditStatus}
+        applyAiBrandEdit={props.applyAiBrandEdit}
         brandProfile={props.brandProfile}
         clipboardStatus={props.clipboardStatus}
         codeDraft={props.codeDraft}
@@ -544,8 +657,11 @@ function StepPage(props: {
         generateWebsiteAssets={props.generateHeroImageAsset}
         generating={props.generating}
         regenerate={props.regenerate}
+        setAiEditPrompt={props.setAiEditPrompt}
         setCodeDraft={props.setCodeDraft}
         step={props.step}
+        updateBrandColor={props.updateBrandColor}
+        updateBrandStyle={props.updateBrandStyle}
         wantsApp={props.wantsApp}
         wantsWebsite={props.wantsWebsite}
       />
@@ -729,6 +845,9 @@ function BuilderPanel(props: {
 
 function OutputPanel(props: {
   assetStatus: { identity: boolean; website: boolean; landing: boolean; export: boolean };
+  aiEditPrompt: string;
+  aiEditStatus: string;
+  applyAiBrandEdit: () => void;
   brandProfile: BrandProfile;
   clipboardStatus: string;
   codeDraft: string;
@@ -739,8 +858,11 @@ function OutputPanel(props: {
   generateWebsiteAssets: () => void;
   generating: boolean;
   regenerate: (preset: StylePresetId) => void;
+  setAiEditPrompt: (value: string) => void;
   setCodeDraft: (value: string) => void;
   step: BuilderStep;
+  updateBrandColor: (name: keyof BrandProfile["colors"], value: string) => void;
+  updateBrandStyle: (value: string) => void;
   wantsApp: boolean;
   wantsWebsite: boolean;
 }) {
@@ -762,6 +884,15 @@ function OutputPanel(props: {
       <div className="output-stack">
         {props.step === 6 ? (
           <div className="hero-generator-panel" id="section-website-assets">
+            <BrandEditPanel
+              aiEditPrompt={props.aiEditPrompt}
+              aiEditStatus={props.aiEditStatus}
+              applyAiBrandEdit={props.applyAiBrandEdit}
+              profile={props.brandProfile}
+              setAiEditPrompt={props.setAiEditPrompt}
+              updateBrandColor={props.updateBrandColor}
+              updateBrandStyle={props.updateBrandStyle}
+            />
             <GeneratorCard
               actionLabel="Create Hero Image"
               detail={props.wantsApp ? "Pulls app name, audience, style, typography, colors, and tone into the hero image generator." : "Pulls app name, audience, style, typography, colors, and tone into the website hero generator."}
@@ -868,6 +999,81 @@ function StoreCheckCard({ detail, onCheck, platform, status }: { detail: string;
         <SearchCheck size={18} /> {label} <ExternalLink size={15} />
       </button>
     </article>
+  );
+}
+
+function BrandEditPanel(props: {
+  aiEditPrompt: string;
+  aiEditStatus: string;
+  applyAiBrandEdit: () => void;
+  profile: BrandProfile;
+  setAiEditPrompt: (value: string) => void;
+  updateBrandColor: (name: keyof BrandProfile["colors"], value: string) => void;
+  updateBrandStyle: (value: string) => void;
+}) {
+  const colorFields: Array<{ key: keyof BrandProfile["colors"]; label: string }> = [
+    { key: "primary", label: "Primary" },
+    { key: "secondary", label: "Secondary" },
+    { key: "accent", label: "Accent" },
+    { key: "background", label: "Background" },
+    { key: "surface", label: "Surface" },
+    { key: "text", label: "Text" }
+  ];
+
+  return (
+    <section className="brand-edit-panel">
+      <div className="section-head">
+        <div>
+          <p className="eyebrow">Brand editor</p>
+          <h3>Edit colors, style, and AI direction</h3>
+        </div>
+        <Palette size={22} />
+      </div>
+
+      <div className="color-editor-grid">
+        {colorFields.map((field) => (
+          <label className="color-field" key={field.key}>
+            <span>{field.label}</span>
+            <input
+              aria-label={`${field.label} color`}
+              onChange={(event) => props.updateBrandColor(field.key, event.target.value)}
+              type="color"
+              value={props.profile.colors[field.key]}
+            />
+            <input
+              aria-label={`${field.label} hex`}
+              onChange={(event) => props.updateBrandColor(field.key, event.target.value)}
+              value={props.profile.colors[field.key]}
+            />
+          </label>
+        ))}
+      </div>
+
+      <label className="style-editor">
+        <span>Style Direction</span>
+        <textarea
+          onChange={(event) => props.updateBrandStyle(event.target.value)}
+          rows={3}
+          value={props.profile.visualDirection}
+        />
+      </label>
+
+      <div className="ai-edit-box">
+        <label>
+          <span>AI Edit Prompt</span>
+          <textarea
+            placeholder="Example: Make this premium, dark, and purple for a fintech app."
+            onChange={(event) => props.setAiEditPrompt(event.target.value)}
+            rows={3}
+            value={props.aiEditPrompt}
+          />
+        </label>
+        <button className="primary-button" onClick={props.applyAiBrandEdit} type="button">
+          <Sparkles size={18} /> Apply AI Edit
+        </button>
+        {props.aiEditStatus ? <p className="output-note">{props.aiEditStatus}</p> : null}
+      </div>
+    </section>
   );
 }
 
