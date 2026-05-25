@@ -41,6 +41,9 @@ type LaunchTargets = {
   ios: boolean;
   android: boolean;
 };
+type LogoMode = "Lockup" | "Badge" | "Wordmark";
+type LogoMark = "Orbit" | "Spark" | "Stack" | "Shield" | "Wave" | "Monogram";
+type LogoMood = "Modern SaaS" | "Premium" | "Bold Consumer" | "Trust";
 
 const builderRoutes: Array<{ step: BuilderStep; label: string; path: string }> = [
   { step: 1, label: "Name App", path: "/name-app" },
@@ -99,6 +102,17 @@ const pipeline = [
 
 const namingAngles = ["Pilot", "Forge", "Stack", "Kit", "Signal", "Studio", "Base", "Lift"];
 
+const logoMarks: Array<{ name: LogoMark; shape: string }> = [
+  { name: "Orbit", shape: "M18 54c18-34 45-48 82-42-22 13-38 29-48 48 18-6 34-5 48 2-28 23-67 31-112-8Z" },
+  { name: "Spark", shape: "M64 12 78 50l40 14-40 14-14 40-14-40-38-14 38-14Z" },
+  { name: "Stack", shape: "M28 22h54a18 18 0 0 1 18 18v54H46a18 18 0 0 1-18-18Z" },
+  { name: "Shield", shape: "M64 10 106 28v34c0 26-17 44-42 56-25-12-42-30-42-56V28Z" },
+  { name: "Wave", shape: "M26 78c15-42 54-60 88-38-16 2-28 11-34 28 17-6 31-3 42 8-28 26-62 33-96 2Z" },
+  { name: "Monogram", shape: "M64 12a52 52 0 1 1 0 104 52 52 0 0 1 0-104Zm0 18a34 34 0 1 0 0 68 34 34 0 0 0 0-68Z" }
+];
+
+const logoMoods: LogoMood[] = ["Modern SaaS", "Premium", "Bold Consumer", "Trust"];
+
 export function App() {
   const [step, setStep] = useState<BuilderStep>(() => getStepFromPath(window.location.pathname));
   const [businessName, setBusinessName] = useState(defaultProfile.businessName);
@@ -111,6 +125,9 @@ export function App() {
     ios: true,
     android: true
   });
+  const [logoMode, setLogoMode] = useState<LogoMode>("Lockup");
+  const [logoMark, setLogoMark] = useState<LogoMark>("Orbit");
+  const [logoMood, setLogoMood] = useState<LogoMood>("Modern SaaS");
   const [presetId, setPresetId] = useState<StylePresetId>("startup-dark");
   const [brandProfile, setBrandProfile] = useState<BrandProfile>(defaultProfile);
   const [nameIdeas, setNameIdeas] = useState<string[]>(["LaunchPilot", "FounderForge", "StartupLift", "BrandStack"]);
@@ -366,6 +383,9 @@ export function App() {
           generating={generating}
           industry={industry}
           launchTargets={launchTargets}
+          logoMark={logoMark}
+          logoMode={logoMode}
+          logoMood={logoMood}
           nameIdeas={nameIdeas}
           presetId={presetId}
           regenerate={regenerate}
@@ -375,6 +395,9 @@ export function App() {
           setCodeDraft={setCodeDraft}
           setDescription={setDescription}
           setIndustry={setIndustry}
+          setLogoMark={setLogoMark}
+          setLogoMode={setLogoMode}
+          setLogoMood={setLogoMood}
           setPresetId={setPresetId}
           setTagline={setTagline}
           step={step}
@@ -411,6 +434,9 @@ function StepPage(props: {
   generating: boolean;
   industry: string;
   launchTargets: LaunchTargets;
+  logoMark: LogoMark;
+  logoMode: LogoMode;
+  logoMood: LogoMood;
   nameIdeas: string[];
   presetId: StylePresetId;
   regenerate: (preset: StylePresetId) => void;
@@ -420,6 +446,9 @@ function StepPage(props: {
   setCodeDraft: (value: string) => void;
   setDescription: (value: string) => void;
   setIndustry: (value: string) => void;
+  setLogoMark: (value: LogoMark) => void;
+  setLogoMode: (value: LogoMode) => void;
+  setLogoMood: (value: LogoMood) => void;
   setPresetId: (value: StylePresetId) => void;
   setTagline: (value: string) => void;
   step: BuilderStep;
@@ -440,6 +469,9 @@ function StepPage(props: {
           generateNameIdeas={props.generateNameIdeas}
           industry={props.industry}
           launchTargets={props.launchTargets}
+          logoMark={props.logoMark}
+          logoMode={props.logoMode}
+          logoMood={props.logoMood}
           nameIdeas={props.nameIdeas}
           presetId={props.presetId}
           selectName={props.selectName}
@@ -447,6 +479,9 @@ function StepPage(props: {
           setBusinessName={props.setBusinessName}
           setDescription={props.setDescription}
           setIndustry={props.setIndustry}
+          setLogoMark={props.setLogoMark}
+          setLogoMode={props.setLogoMode}
+          setLogoMood={props.setLogoMood}
           setPresetId={props.setPresetId}
           setTagline={props.setTagline}
           step={props.step}
@@ -474,27 +509,23 @@ function StepPage(props: {
             </button>
           </div>
         </div>
-        <div className="brand-generator-stack">
-          <BrandPreview profile={props.brandProfile} />
-          <div className="generator-grid">
-            <GeneratorCard
-              actionLabel="Create Logo"
-              detail="Pulls app name, style, colors, industry, and tone from the shared brand context."
-              imageUrl={props.brandProfile.logo?.svgUrl}
-              onGenerate={props.generateLogoAsset}
-              status={props.brandProfile.logo ? "Created" : "Not created"}
-              title="Logo Creator"
-            />
-            <GeneratorCard
-              actionLabel="Create Favicon"
-              detail="Uses the current logo and palette to produce favicon sizes and Apple touch icon source."
-              imageUrl={props.brandProfile.favicon?.favicon32}
-              onGenerate={props.generateFaviconAsset}
-              status={props.brandProfile.favicon ? "Created" : "Waiting for logo"}
-              title="Favicon Creator"
-            />
-          </div>
-        </div>
+        <LogoCreatorStudio
+          businessName={props.businessName}
+          generateFaviconAsset={props.generateFaviconAsset}
+          generateLogoAsset={props.generateLogoAsset}
+          industry={props.industry}
+          logoMark={props.logoMark}
+          logoMode={props.logoMode}
+          logoMood={props.logoMood}
+          profile={props.brandProfile}
+          setBusinessName={props.setBusinessName}
+          setIndustry={props.setIndustry}
+          setLogoMark={props.setLogoMark}
+          setLogoMode={props.setLogoMode}
+          setLogoMood={props.setLogoMood}
+          setTagline={props.setTagline}
+          tagline={props.tagline}
+        />
       </section>
     );
   }
@@ -530,6 +561,9 @@ function BuilderPanel(props: {
   generateNameIdeas: () => void;
   industry: string;
   launchTargets: LaunchTargets;
+  logoMark: LogoMark;
+  logoMode: LogoMode;
+  logoMood: LogoMood;
   nameIdeas: string[];
   presetId: StylePresetId;
   selectName: (name: string) => void;
@@ -537,6 +571,9 @@ function BuilderPanel(props: {
   setBusinessName: (value: string) => void;
   setDescription: (value: string) => void;
   setIndustry: (value: string) => void;
+  setLogoMark: (value: LogoMark) => void;
+  setLogoMode: (value: LogoMode) => void;
+  setLogoMood: (value: LogoMood) => void;
   setPresetId: (value: StylePresetId) => void;
   setTagline: (value: string) => void;
   step: BuilderStep;
@@ -856,6 +893,177 @@ function GeneratorCard({ actionLabel, detail, imageUrl, onGenerate, status, titl
   );
 }
 
+function LogoCreatorStudio(props: {
+  businessName: string;
+  generateFaviconAsset: () => void;
+  generateLogoAsset: () => void;
+  industry: string;
+  logoMark: LogoMark;
+  logoMode: LogoMode;
+  logoMood: LogoMood;
+  profile: BrandProfile;
+  setBusinessName: (value: string) => void;
+  setIndustry: (value: string) => void;
+  setLogoMark: (value: LogoMark) => void;
+  setLogoMode: (value: LogoMode) => void;
+  setLogoMood: (value: LogoMood) => void;
+  setTagline: (value: string) => void;
+  tagline: string;
+}) {
+  const selectedMark = logoMarks.find((mark) => mark.name === props.logoMark) ?? logoMarks[0];
+  const previewSvg = buildLogoStudioSvg(props.profile, selectedMark.shape, props.logoMode);
+
+  return (
+    <div className="logo-studio">
+      <section className="logo-controls">
+        <div className="section-head">
+          <div>
+            <p className="eyebrow">Logo Creator</p>
+            <h2>Identity</h2>
+          </div>
+          <Type size={22} />
+        </div>
+
+        <div className="form-grid">
+          <label>
+            <span>Business Name</span>
+            <input value={props.businessName} onChange={(event) => props.setBusinessName(event.target.value)} />
+          </label>
+          <label>
+            <span>Tagline</span>
+            <input value={props.tagline} onChange={(event) => props.setTagline(event.target.value)} />
+          </label>
+          <label className="wide">
+            <span>Industry</span>
+            <input value={props.industry} onChange={(event) => props.setIndustry(event.target.value)} />
+          </label>
+        </div>
+
+        <div className="logo-section">
+          <h3>Logo Style</h3>
+          <div className="segmented-control">
+            {(["Lockup", "Badge", "Wordmark"] as LogoMode[]).map((mode) => (
+              <button className={props.logoMode === mode ? "active" : ""} key={mode} onClick={() => props.setLogoMode(mode)} type="button">
+                {mode}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mark-grid">
+          {logoMarks.map((mark) => (
+            <button className={props.logoMark === mark.name ? "mark-card active" : "mark-card"} key={mark.name} onClick={() => props.setLogoMark(mark.name)} type="button">
+              <MiniLogoMark colors={props.profile.colors} shape={mark.shape} />
+              <strong>{mark.name}</strong>
+            </button>
+          ))}
+        </div>
+
+        <div className="segmented-control mood-control">
+          {logoMoods.map((mood) => (
+            <button className={props.logoMood === mood ? "active" : ""} key={mood} onClick={() => props.setLogoMood(mood)} type="button">
+              {mood}
+            </button>
+          ))}
+        </div>
+
+        <div className="logo-section">
+          <h3>Palette</h3>
+          <div className="palette-grid">
+            <PaletteChoice colors={[props.profile.colors.primary, props.profile.colors.secondary, props.profile.colors.accent]} label="Launch Blue" />
+            <PaletteChoice colors={[props.profile.colors.secondary, "#334155", "#eab308"]} label="Signal Green" />
+          </div>
+        </div>
+      </section>
+
+      <section className="logo-preview-panel">
+        <div className="section-head">
+          <div>
+            <p className="eyebrow">Live SVG Preview</p>
+            <h2>{props.logoMode}</h2>
+          </div>
+          <button className="secondary-button" onClick={props.generateLogoAsset} type="button">
+            <FileImage size={18} /> SVG
+          </button>
+        </div>
+
+        <div className="svg-stage" dangerouslySetInnerHTML={{ __html: previewSvg }} />
+
+        <div className="logo-use-grid">
+          <PreviewUseCase imageUrl={props.profile.favicon?.favicon32 || props.profile.logo?.svgUrl} title="App Icon" />
+          <PreviewUseCase imageUrl={props.profile.logo?.svgUrl} title="Navbar" text={props.businessName} />
+          <PreviewUseCase dark imageUrl={props.profile.logo?.svgUrl} title="Social" text={props.tagline || props.businessName} />
+        </div>
+
+        <div className="button-grid">
+          <button className="primary-button" onClick={props.generateLogoAsset} type="button">
+            <Wand2 size={18} /> Create Logo
+          </button>
+          <button className="secondary-button" onClick={props.generateFaviconAsset} type="button">
+            <Fingerprint size={18} /> Create Favicon
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function MiniLogoMark({ colors, shape }: { colors: BrandProfile["colors"]; shape: string }) {
+  return (
+    <svg className="mini-logo-mark" viewBox="0 0 128 128" aria-hidden="true">
+      <rect x="20" y="20" width="88" height="88" rx="24" fill={colors.primary} />
+      <path d={shape} fill={colors.secondary} />
+      <text x="64" y="78" textAnchor="middle" fontSize="42" fontWeight="900" fill={colors.text}>L</text>
+      <rect x="58" y="82" width="42" height="10" rx="5" fill={colors.accent} />
+    </svg>
+  );
+}
+
+function PaletteChoice({ colors, label }: { colors: string[]; label: string }) {
+  return (
+    <button className="palette-choice" type="button">
+      <span>
+        {colors.map((color) => <i key={color} style={{ background: color }} />)}
+      </span>
+      <strong>{label}</strong>
+    </button>
+  );
+}
+
+function PreviewUseCase({ dark = false, imageUrl, text, title }: { dark?: boolean; imageUrl?: string; text?: string; title: string }) {
+  return (
+    <article className={dark ? "use-case-card dark" : "use-case-card"}>
+      <span>{title}</span>
+      <div>
+        {imageUrl ? <img src={imageUrl} alt="" /> : <Rocket size={26} />}
+        {text ? <strong>{text}</strong> : null}
+      </div>
+    </article>
+  );
+}
+
+function buildLogoStudioSvg(profile: BrandProfile, shape: string, mode: LogoMode) {
+  const initials = profile.businessName.split(/\s+/).map((word) => word[0]).join("").slice(0, 2).toUpperCase() || "L";
+  const showText = mode !== "Badge";
+  const showMark = mode !== "Wordmark";
+  const markX = showText ? 140 : 320;
+  const textX = showMark ? 260 : 170;
+
+  return `<svg viewBox="0 0 760 300" role="img" aria-label="${profile.businessName} logo preview">
+    <rect width="760" height="300" rx="36" fill="#f8fafc"/>
+    <rect x="36" y="58" width="688" height="184" rx="28" fill="#ffffff"/>
+    ${showMark ? `<g transform="translate(${markX - 64} 86)">
+      <rect x="0" y="0" width="128" height="128" rx="30" fill="${profile.colors.primary}"/>
+      <path d="${shape}" fill="${profile.colors.secondary}"/>
+      <text x="64" y="78" text-anchor="middle" font-size="42" font-weight="900" fill="${profile.colors.text}">${initials}</text>
+      <rect x="58" y="84" width="48" height="10" rx="5" fill="${profile.colors.accent}"/>
+    </g>` : ""}
+    ${showText ? `<text x="${textX}" y="135" font-family="Inter, Arial" font-size="48" font-weight="900" fill="#111827">${escapeHtml(profile.businessName)}</text>
+    <text x="${textX}" y="175" font-family="Inter, Arial" font-size="21" font-weight="800" fill="${profile.colors.secondary}">${escapeHtml(profile.tagline || profile.industry)}</text>
+    <rect x="${textX}" y="194" width="138" height="9" rx="5" fill="${profile.colors.accent}"/>` : ""}
+  </svg>`;
+}
+
 function BrandPreview({ profile }: { profile: BrandProfile }) {
   return (
     <div className="preview-shell" style={{ background: profile.colors.background, color: profile.colors.text }}>
@@ -940,6 +1148,19 @@ function decodeDataSvg(value?: string) {
   if (!value) return "";
   const [, encoded] = value.split("data:image/svg+xml;utf8,");
   return encoded ? decodeURIComponent(encoded) : value;
+}
+
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (character) => {
+    const entities: Record<string, string> = {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      "\"": "&quot;",
+      "'": "&#039;"
+    };
+    return entities[character];
+  });
 }
 
 function defaultLandingCode(profile: BrandProfile) {

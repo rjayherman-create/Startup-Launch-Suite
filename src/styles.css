@@ -552,6 +552,176 @@ button:disabled {
   gap: 14px;
 }
 
+.logo-studio {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.82fr) minmax(360px, 1fr);
+  gap: 16px;
+}
+
+.logo-controls,
+.logo-preview-panel {
+  border: 1px solid #d8e0ea;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 18px;
+}
+
+.logo-section {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.logo-section h3 {
+  margin: 0;
+}
+
+.segmented-control,
+.mood-control {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.segmented-control button,
+.palette-choice {
+  min-height: 38px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #172033;
+  padding: 8px 12px;
+  font-weight: 850;
+}
+
+.segmented-control button.active,
+.palette-choice:focus,
+.palette-choice:hover {
+  border-color: #0f766e;
+  background: #edf7f5;
+  color: #0f766e;
+}
+
+.mark-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.mark-card {
+  display: grid;
+  gap: 8px;
+  min-height: 120px;
+  place-items: center;
+  border: 1px solid #d8e0ea;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 12px;
+  font-weight: 850;
+}
+
+.mark-card.active {
+  border-color: #0f766e;
+  background: #edf7f5;
+  color: #0f766e;
+}
+
+.mini-logo-mark {
+  width: 70px;
+  height: 70px;
+}
+
+.palette-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.palette-choice {
+  display: grid;
+  gap: 8px;
+  text-align: left;
+}
+
+.palette-choice span {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.palette-choice i {
+  height: 28px;
+  border-radius: 8px;
+}
+
+.svg-stage {
+  display: grid;
+  min-height: 360px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background-image:
+    linear-gradient(#e2e8f0 1px, transparent 1px),
+    linear-gradient(90deg, #e2e8f0 1px, transparent 1px);
+  background-size: 32px 32px;
+  padding: 18px;
+}
+
+.svg-stage svg {
+  width: 100%;
+  max-width: 760px;
+  height: auto;
+  filter: drop-shadow(0 24px 40px rgba(15, 23, 42, 0.08));
+}
+
+.logo-use-grid {
+  display: grid;
+  grid-template-columns: 0.75fr 1fr 1fr;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.use-case-card {
+  display: grid;
+  gap: 12px;
+  min-height: 120px;
+  border: 1px solid #d8e0ea;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 14px;
+}
+
+.use-case-card.dark {
+  background: #111827;
+  color: #ffffff;
+}
+
+.use-case-card > span {
+  color: #667085;
+  font-size: 12px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.use-case-card.dark > span {
+  color: #cbd5e1;
+}
+
+.use-case-card div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.use-case-card img {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+}
+
 .generator-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -835,6 +1005,7 @@ button:disabled {
 @media (max-width: 920px) {
   .app-shell,
   .hero-band,
+  .logo-studio,
   .content-grid.two,
   .content-grid.four,
   .pipeline-band {
@@ -881,6 +1052,9 @@ button:disabled {
   .form-grid,
   .preset-grid,
   .generator-grid,
+  .logo-use-grid,
+  .mark-grid,
+  .palette-grid,
   .target-grid,
   .store-check-grid,
   .tokens {
