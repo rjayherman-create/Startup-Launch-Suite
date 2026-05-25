@@ -287,82 +287,140 @@ export function App() {
           </div>
         </header>
 
-        <section className="hero-band" id="section-brand-identity">
-          <div className="hero-copy">
-            <p className="eyebrow">Master app workflow</p>
-            <h2>{brandProfile.businessName || "Your Startup"} is being assembled as one launch-ready ecosystem.</h2>
-            <p>{brandProfile.description}</p>
-            <div className="hero-actions">
-              <button className="primary-button" onClick={generateIdentity} disabled={generating} type="button">
-                <Wand2 size={18} /> Generate Brand Identity
-              </button>
-              <button className="secondary-button" onClick={() => regenerate(presetId)} disabled={generating || !assetStatus.identity} type="button">
-                <RefreshCw size={18} /> Regenerate Ecosystem
-              </button>
-            </div>
-          </div>
-          <BrandPreview profile={brandProfile} />
-        </section>
-
-        <div className="content-grid two">
-          <BuilderPanel
-            audience={audience}
-            businessName={businessName}
-            checkStore={checkStore}
-            description={description}
-            generateNameIdeas={generateNameIdeas}
-            industry={industry}
-            launchTargets={launchTargets}
-            nameIdeas={nameIdeas}
-            presetId={presetId}
-            selectName={selectName}
-            setAudience={setAudience}
-            setBusinessName={setBusinessName}
-            setDescription={setDescription}
-            setIndustry={setIndustry}
-            setPresetId={setPresetId}
-            setTagline={setTagline}
-            step={step}
-            storeCheck={storeCheck}
-            tagline={tagline}
-            toggleLaunchTarget={toggleLaunchTarget}
-          />
-          <OutputPanel
-            assetStatus={assetStatus}
-            brandProfile={brandProfile}
-            exportStartupKit={exportStartupKit}
-            generateLandingPage={generateLandingPage}
-            generateWebsiteAssets={generateWebsiteAssets}
-            generating={generating}
-            regenerate={regenerate}
-            wantsApp={wantsApp}
-            wantsWebsite={wantsWebsite}
-          />
-        </div>
-
-        <section className="pipeline-band">
-          {pipeline.map((item, index) => (
-            <article key={item}>
-              <span>{index + 1}</span>
-              <strong>{item}</strong>
-              {index < pipeline.length - 1 ? <ChevronRight size={18} /> : <CheckCircle2 size={18} />}
-            </article>
-          ))}
-        </section>
-
-        <section className="system-section">
-          <div className="section-head">
-            <div>
-              <p className="eyebrow">Smart technical setup</p>
-              <h2>Built as one product with isolated generation engines.</h2>
-            </div>
-          </div>
-          <div className="content-grid four">
-            {systemCards.map((card) => <SystemCard key={card.title} {...card} />)}
-          </div>
-        </section>
+        <StepPage
+          assetStatus={assetStatus}
+          audience={audience}
+          brandProfile={brandProfile}
+          businessName={businessName}
+          checkStore={checkStore}
+          description={description}
+          exportStartupKit={exportStartupKit}
+          generateIdentity={generateIdentity}
+          generateLandingPage={generateLandingPage}
+          generateNameIdeas={generateNameIdeas}
+          generateWebsiteAssets={generateWebsiteAssets}
+          generating={generating}
+          industry={industry}
+          launchTargets={launchTargets}
+          nameIdeas={nameIdeas}
+          presetId={presetId}
+          regenerate={regenerate}
+          selectName={selectName}
+          setAudience={setAudience}
+          setBusinessName={setBusinessName}
+          setDescription={setDescription}
+          setIndustry={setIndustry}
+          setPresetId={setPresetId}
+          setTagline={setTagline}
+          step={step}
+          storeCheck={storeCheck}
+          tagline={tagline}
+          toggleLaunchTarget={toggleLaunchTarget}
+          wantsApp={wantsApp}
+          wantsWebsite={wantsWebsite}
+        />
       </section>
     </main>
+  );
+}
+
+function StepPage(props: {
+  assetStatus: { identity: boolean; website: boolean; landing: boolean; export: boolean };
+  audience: string;
+  brandProfile: BrandProfile;
+  businessName: string;
+  checkStore: (platform: "ios" | "android") => void;
+  description: string;
+  exportStartupKit: () => void;
+  generateIdentity: () => void;
+  generateLandingPage: () => void;
+  generateNameIdeas: () => void;
+  generateWebsiteAssets: () => void;
+  generating: boolean;
+  industry: string;
+  launchTargets: LaunchTargets;
+  nameIdeas: string[];
+  presetId: StylePresetId;
+  regenerate: (preset: StylePresetId) => void;
+  selectName: (name: string) => void;
+  setAudience: (value: string) => void;
+  setBusinessName: (value: string) => void;
+  setDescription: (value: string) => void;
+  setIndustry: (value: string) => void;
+  setPresetId: (value: StylePresetId) => void;
+  setTagline: (value: string) => void;
+  step: BuilderStep;
+  storeCheck: Record<"ios" | "android", StoreCheck>;
+  tagline: string;
+  toggleLaunchTarget: (target: keyof LaunchTargets) => void;
+  wantsApp: boolean;
+  wantsWebsite: boolean;
+}) {
+  if (props.step <= 4) {
+    return (
+      <div className="step-page">
+        <BuilderPanel
+          audience={props.audience}
+          businessName={props.businessName}
+          checkStore={props.checkStore}
+          description={props.description}
+          generateNameIdeas={props.generateNameIdeas}
+          industry={props.industry}
+          launchTargets={props.launchTargets}
+          nameIdeas={props.nameIdeas}
+          presetId={props.presetId}
+          selectName={props.selectName}
+          setAudience={props.setAudience}
+          setBusinessName={props.setBusinessName}
+          setDescription={props.setDescription}
+          setIndustry={props.setIndustry}
+          setPresetId={props.setPresetId}
+          setTagline={props.setTagline}
+          step={props.step}
+          storeCheck={props.storeCheck}
+          tagline={props.tagline}
+          toggleLaunchTarget={props.toggleLaunchTarget}
+        />
+      </div>
+    );
+  }
+
+  if (props.step === 5) {
+    return (
+      <section className="hero-band step-page" id="section-brand-identity">
+        <div className="hero-copy">
+          <p className="eyebrow">Brand identity</p>
+          <h2>{props.brandProfile.businessName || "Your App"} is ready for its first visual system.</h2>
+          <p>{props.brandProfile.description}</p>
+          <div className="hero-actions">
+            <button className="primary-button" onClick={props.generateIdentity} disabled={props.generating} type="button">
+              <Wand2 size={18} /> Generate Brand Identity
+            </button>
+            <button className="secondary-button" onClick={() => props.regenerate(props.presetId)} disabled={props.generating || !props.assetStatus.identity} type="button">
+              <RefreshCw size={18} /> Regenerate Ecosystem
+            </button>
+          </div>
+        </div>
+        <BrandPreview profile={props.brandProfile} />
+      </section>
+    );
+  }
+
+  return (
+    <div className="step-page">
+      <OutputPanel
+        assetStatus={props.assetStatus}
+        brandProfile={props.brandProfile}
+        exportStartupKit={props.exportStartupKit}
+        generateLandingPage={props.generateLandingPage}
+        generateWebsiteAssets={props.generateWebsiteAssets}
+        generating={props.generating}
+        regenerate={props.regenerate}
+        step={props.step}
+        wantsApp={props.wantsApp}
+        wantsWebsite={props.wantsWebsite}
+      />
+    </div>
   );
 }
 
@@ -389,17 +447,29 @@ function BuilderPanel(props: {
   toggleLaunchTarget: (target: keyof LaunchTargets) => void;
 }) {
   const wantsApp = props.launchTargets.ios || props.launchTargets.android;
+  const stepTitles: Record<BuilderStep, string> = {
+    1: "Name App",
+    2: "Describe App",
+    3: "Choose Style",
+    4: "Store Check",
+    5: "Brand Identity",
+    6: "Website Assets",
+    7: "Landing Page",
+    8: "Export Kit"
+  };
 
   return (
-    <section className="panel">
+    <section className="panel single-step-panel">
       <div className="section-head">
         <div>
           <p className="eyebrow">Startup builder flow</p>
-          <h2>Brand Context Engine</h2>
+          <h2>{stepTitles[props.step]}</h2>
         </div>
         <Workflow size={24} />
       </div>
 
+      {props.step === 1 ? (
+        <>
       <div className="form-grid">
         <label id="section-name-app">
           <span>App Name</span>
@@ -409,48 +479,6 @@ function BuilderPanel(props: {
           <span>Tagline</span>
           <input value={props.tagline} onChange={(event) => props.setTagline(event.target.value)} />
         </label>
-        <label>
-          <span>Industry</span>
-          <input value={props.industry} onChange={(event) => props.setIndustry(event.target.value)} />
-        </label>
-        <label>
-          <span>Audience</span>
-          <input value={props.audience} onChange={(event) => props.setAudience(event.target.value)} />
-        </label>
-        <label className="wide" id="section-describe-app">
-          <span>Describe App</span>
-          <textarea value={props.description} onChange={(event) => props.setDescription(event.target.value)} rows={5} />
-        </label>
-      </div>
-
-      <div className="launch-targets">
-        <div>
-          <p className="eyebrow">Launch target</p>
-          <h3>What are you building?</h3>
-        </div>
-        <div className="target-grid">
-          <label className="target-option">
-            <input checked={props.launchTargets.website} onChange={() => props.toggleLaunchTarget("website")} type="checkbox" />
-            <span>
-              <strong>Website</strong>
-              <small>Landing page, CTA sections, pricing, testimonials, and site export.</small>
-            </span>
-          </label>
-          <label className="target-option">
-            <input checked={props.launchTargets.ios} onChange={() => props.toggleLaunchTarget("ios")} type="checkbox" />
-            <span>
-              <strong>iOS App</strong>
-              <small>App name check, icon/favicons, App Store-ready visual direction.</small>
-            </span>
-          </label>
-          <label className="target-option">
-            <input checked={props.launchTargets.android} onChange={() => props.toggleLaunchTarget("android")} type="checkbox" />
-            <span>
-              <strong>Android App</strong>
-              <small>Google Play name check, launch assets, mobile brand consistency.</small>
-            </span>
-          </label>
-        </div>
       </div>
 
       <div className="naming-lab">
@@ -468,6 +496,72 @@ function BuilderPanel(props: {
             </button>
           ))}
         </div>
+      </div>
+        </>
+      ) : null}
+
+      {props.step === 2 ? (
+        <>
+          <div className="form-grid">
+            <label>
+              <span>Industry</span>
+              <input value={props.industry} onChange={(event) => props.setIndustry(event.target.value)} />
+            </label>
+            <label>
+              <span>Audience</span>
+              <input value={props.audience} onChange={(event) => props.setAudience(event.target.value)} />
+            </label>
+            <label className="wide" id="section-describe-app">
+              <span>Describe App</span>
+              <textarea value={props.description} onChange={(event) => props.setDescription(event.target.value)} rows={6} />
+            </label>
+          </div>
+
+          <div className="launch-targets">
+            <div>
+              <p className="eyebrow">Launch target</p>
+              <h3>What are you building?</h3>
+            </div>
+            <div className="target-grid">
+              <label className="target-option">
+                <input checked={props.launchTargets.website} onChange={() => props.toggleLaunchTarget("website")} type="checkbox" />
+                <span>
+                  <strong>Website</strong>
+                  <small>Landing page, CTA sections, pricing, testimonials, and site export.</small>
+                </span>
+              </label>
+              <label className="target-option">
+                <input checked={props.launchTargets.ios} onChange={() => props.toggleLaunchTarget("ios")} type="checkbox" />
+                <span>
+                  <strong>iOS App</strong>
+                  <small>App name check, icon/favicons, App Store-ready visual direction.</small>
+                </span>
+              </label>
+              <label className="target-option">
+                <input checked={props.launchTargets.android} onChange={() => props.toggleLaunchTarget("android")} type="checkbox" />
+                <span>
+                  <strong>Android App</strong>
+                  <small>Google Play name check, launch assets, mobile brand consistency.</small>
+                </span>
+              </label>
+            </div>
+          </div>
+        </>
+      ) : null}
+
+      {props.step === 3 ? (
+      <div className="preset-grid" id="section-choose-style">
+        {stylePresets.map((preset) => (
+          <button className={props.presetId === preset.id ? "preset active" : "preset"} key={preset.id} onClick={() => props.setPresetId(preset.id)} type="button">
+            <span style={{ background: preset.colors.primary }} />
+            <strong>{preset.label}</strong>
+            <small>{preset.direction}</small>
+          </button>
+        ))}
+      </div>
+      ) : null}
+
+      {props.step === 4 ? (
         <div className="store-check-grid" id="section-store-check">
           {props.launchTargets.ios ? (
             <StoreCheckCard
@@ -493,27 +587,7 @@ function BuilderPanel(props: {
             </div>
           ) : null}
         </div>
-      </div>
-
-      <div className="preset-grid" id="section-choose-style">
-        {stylePresets.map((preset) => (
-          <button className={props.presetId === preset.id ? "preset active" : "preset"} key={preset.id} onClick={() => props.setPresetId(preset.id)} type="button">
-            <span style={{ background: preset.colors.primary }} />
-            <strong>{preset.label}</strong>
-            <small>{preset.direction}</small>
-          </button>
-        ))}
-      </div>
-
-      <pre className="context-preview">{JSON.stringify({
-        businessName: props.businessName,
-        launchTargets: props.launchTargets,
-        storeNameChecks: props.storeCheck,
-        style: stylePresets.find((item) => item.id === props.presetId)?.label,
-        audience: props.audience,
-        industry: props.industry,
-        activeStep: props.step
-      }, null, 2)}</pre>
+      ) : null}
     </section>
   );
 }
@@ -526,6 +600,7 @@ function OutputPanel(props: {
   generateWebsiteAssets: () => void;
   generating: boolean;
   regenerate: (preset: StylePresetId) => void;
+  step: BuilderStep;
   wantsApp: boolean;
   wantsWebsite: boolean;
 }) {
@@ -535,47 +610,60 @@ function OutputPanel(props: {
     && !props.generating;
 
   return (
-    <section className="panel">
+    <section className="panel single-step-panel">
       <div className="section-head">
         <div>
           <p className="eyebrow">Generated outputs</p>
-          <h2>Complete startup kit</h2>
+          <h2>{props.step === 6 ? "Website/App Assets" : props.step === 7 ? "Landing Page" : "Export Kit"}</h2>
         </div>
         <Archive size={24} />
       </div>
 
       <div className="output-stack">
-        <OutputRow done={props.assetStatus.identity} icon={Palette} id="section-brand-identity-output" title="Brand Identity" detail="Logo, favicon, colors, typography, style direction" />
-        <OutputRow done={props.assetStatus.website} icon={Image} id="section-website-assets" title={props.wantsApp ? "Website/App Assets" : "Website Assets"} detail={props.wantsApp ? "Hero image, app icon direction, launch visuals, mockup system" : "Hero image, illustrations, mockup visual system"} />
-        {props.wantsWebsite ? (
+        {props.step === 6 ? (
+          <OutputRow done={props.assetStatus.website} icon={Image} id="section-website-assets" title={props.wantsApp ? "Website/App Assets" : "Website Assets"} detail={props.wantsApp ? "Hero image, app icon direction, launch visuals, mockup system" : "Hero image, illustrations, mockup visual system"} />
+        ) : null}
+        {props.step === 7 && props.wantsWebsite ? (
           <OutputRow done={props.assetStatus.landing} icon={Layers3} id="section-landing-page" title="Landing Page" detail="Homepage, CTA sections, pricing blocks, testimonials" />
-        ) : (
+        ) : null}
+        {props.step === 7 && !props.wantsWebsite ? (
           <OutputRow done={true} icon={Layers3} id="section-landing-page" title="Landing Page Skipped" detail="App-only launch kits do not require a website landing page." />
-        )}
-        <OutputRow done={props.assetStatus.export} icon={Download} id="section-export-kit" title="ZIP Export" detail="Logos, SVGs, code, favicon package, palette, fonts" />
+        ) : null}
+        {props.step === 8 ? (
+          <OutputRow done={props.assetStatus.export} icon={Download} id="section-export-kit" title="ZIP Export" detail="Logos, SVGs, code, favicon package, palette, fonts" />
+        ) : null}
       </div>
 
       <div className="button-grid">
+        {props.step === 6 ? (
         <button className="secondary-button" disabled={!props.assetStatus.identity || props.generating} onClick={props.generateWebsiteAssets} type="button">
           <Image size={18} /> {props.wantsApp ? "Generate Launch Assets" : "Generate Website Assets"}
         </button>
+        ) : null}
+        {props.step === 7 ? (
         <button className="secondary-button" disabled={!props.wantsWebsite || !props.assetStatus.website || props.generating} onClick={props.generateLandingPage} type="button">
           <Globe2 size={18} /> Generate Landing Page
         </button>
+        ) : null}
+        {props.step === 8 ? (
         <button className="primary-button" disabled={!canExport} onClick={props.exportStartupKit} type="button">
           <Download size={18} /> Export Startup Kit
         </button>
+        ) : null}
       </div>
 
-      {!props.wantsWebsite ? (
+      {props.step === 7 && !props.wantsWebsite ? (
         <p className="output-note">Landing page generation is disabled because this kit is set to app-only.</p>
       ) : null}
 
+      {props.step === 8 ? (
       <div className="memory-box">
         <strong>Regeneration Memory</strong>
         {props.brandProfile.memory.map((item) => <span key={item}>{item}</span>)}
       </div>
+      ) : null}
 
+      {props.step === 8 ? (
       <div className="mini-section">
         <strong>Change style and update the ecosystem</strong>
         <div className="mini-actions">
@@ -586,6 +674,7 @@ function OutputPanel(props: {
           ))}
         </div>
       </div>
+      ) : null}
     </section>
   );
 }

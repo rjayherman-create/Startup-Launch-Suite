@@ -289,6 +289,15 @@ button:disabled {
   gap: 16px;
 }
 
+.step-page {
+  display: grid;
+  gap: 18px;
+}
+
+.single-step-panel {
+  min-height: 520px;
+}
+
 .content-grid.two {
   grid-template-columns: minmax(0, 1fr) minmax(400px, 0.78fr);
 }
