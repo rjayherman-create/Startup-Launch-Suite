@@ -6,6 +6,7 @@ import {
   ChevronRight,
   Database,
   Download,
+  ExternalLink,
   FileCode2,
   FileImage,
   Fingerprint,
@@ -15,8 +16,10 @@ import {
   Palette,
   RefreshCw,
   Rocket,
+  SearchCheck,
   ShieldCheck,
   Sparkles,
+  Store,
   Type,
   Wand2,
   Workflow,
@@ -31,7 +34,8 @@ import {
   type StylePresetId
 } from "./branding-engine";
 
-type BuilderStep = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+type BuilderStep = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+type StoreCheck = "unchecked" | "checking" | "checked";
 
 const defaultProfile = createBrandProfile({
   businessName: "LaunchPilot",
@@ -59,11 +63,14 @@ const systemCards = [
 ];
 
 const pipeline = [
+  "Name and store check",
   "Generate logo",
   "Extract colors, typography, style direction",
   "Send brand context to generators",
   "Assemble startup kit"
 ];
+
+const namingAngles = ["Pilot", "Forge", "Stack", "Kit", "Signal", "Studio", "Base", "Lift"];
 
 export function App() {
   const [step, setStep] = useState<BuilderStep>(1);
@@ -74,6 +81,11 @@ export function App() {
   const [audience, setAudience] = useState(defaultProfile.audience);
   const [presetId, setPresetId] = useState<StylePresetId>("startup-dark");
   const [brandProfile, setBrandProfile] = useState<BrandProfile>(defaultProfile);
+  const [nameIdeas, setNameIdeas] = useState<string[]>(["LaunchPilot", "FounderForge", "StartupLift", "BrandStack"]);
+  const [storeCheck, setStoreCheck] = useState<Record<"ios" | "android", StoreCheck>>({
+    ios: "unchecked",
+    android: "unchecked"
+  });
   const [generating, setGenerating] = useState(false);
   const [assetStatus, setAssetStatus] = useState({
     identity: false,
@@ -84,6 +96,40 @@ export function App() {
 
   const engine = useMemo(() => new StartupBrandingEngine(brandProfile), [brandProfile]);
 
+  function generateNameIdeas() {
+    const words = `${description} ${industry} ${audience}`
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, " ")
+      .split(/\s+/)
+      .filter((word) => word.length > 3 && !["that", "with", "from", "this", "your", "startup", "platform"].includes(word));
+    const seed = words.slice(0, 4).map((word) => word[0].toUpperCase() + word.slice(1));
+    const ideas = [...seed, "Launch"].flatMap((word, index) => [
+      `${word}${namingAngles[index % namingAngles.length]}`,
+      `${namingAngles[(index + 2) % namingAngles.length]}${word}`
+    ]);
+
+    setNameIdeas([...new Set(ideas)].slice(0, 8));
+    setStep(1);
+  }
+
+  function selectName(name: string) {
+    setBusinessName(name);
+    setStoreCheck({ ios: "unchecked", android: "unchecked" });
+  }
+
+  function checkStore(platform: "ios" | "android") {
+    setStoreCheck((current) => ({ ...current, [platform]: "checking" }));
+    const query = encodeURIComponent(businessName.trim());
+    const url = platform === "ios"
+      ? `https://apps.apple.com/us/search?term=${query}`
+      : `https://play.google.com/store/search?q=${query}&c=apps`;
+
+    window.open(url, "_blank", "noopener,noreferrer");
+    window.setTimeout(() => {
+      setStoreCheck((current) => ({ ...current, [platform]: "checked" }));
+    }, 650);
+  }
+
   async function generateIdentity() {
     setGenerating(true);
     const profile = createBrandProfile({ businessName, tagline, description, industry, audience, presetId });
@@ -92,7 +138,7 @@ export function App() {
     await nextEngine.generateFavicon();
     setBrandProfile(nextEngine.getProfile());
     setAssetStatus((current) => ({ ...current, identity: true }));
-    setStep(4);
+    setStep(5);
     setGenerating(false);
   }
 
@@ -101,7 +147,7 @@ export function App() {
     await engine.generateHeroImage();
     setBrandProfile({ ...engine.getProfile() });
     setAssetStatus((current) => ({ ...current, website: true }));
-    setStep(5);
+    setStep(6);
     setGenerating(false);
   }
 
@@ -110,7 +156,7 @@ export function App() {
     await engine.generateLandingPage();
     setBrandProfile({ ...engine.getProfile() });
     setAssetStatus((current) => ({ ...current, landing: true }));
-    setStep(6);
+    setStep(7);
     setGenerating(false);
   }
 
@@ -126,7 +172,7 @@ export function App() {
   function exportStartupKit() {
     downloadStartupKit(brandProfile);
     setAssetStatus((current) => ({ ...current, export: true }));
-    setStep(7);
+    setStep(8);
   }
 
   const progress = Math.round((Object.values(assetStatus).filter(Boolean).length / 4) * 100);
@@ -144,9 +190,10 @@ export function App() {
 
         <nav className="step-list" aria-label="Startup builder steps">
           {[
-            "Business Name",
+            "Name Startup",
             "Describe Startup",
             "Choose Style",
+            "Store Check",
             "Brand Identity",
             "Website Assets",
             "Landing Page",
@@ -202,9 +249,13 @@ export function App() {
           <BuilderPanel
             audience={audience}
             businessName={businessName}
+            checkStore={checkStore}
             description={description}
+            generateNameIdeas={generateNameIdeas}
             industry={industry}
+            nameIdeas={nameIdeas}
             presetId={presetId}
+            selectName={selectName}
             setAudience={setAudience}
             setBusinessName={setBusinessName}
             setDescription={setDescription}
@@ -212,6 +263,7 @@ export function App() {
             setPresetId={setPresetId}
             setTagline={setTagline}
             step={step}
+            storeCheck={storeCheck}
             tagline={tagline}
           />
           <OutputPanel
@@ -254,9 +306,13 @@ export function App() {
 function BuilderPanel(props: {
   audience: string;
   businessName: string;
+  checkStore: (platform: "ios" | "android") => void;
   description: string;
+  generateNameIdeas: () => void;
   industry: string;
+  nameIdeas: string[];
   presetId: StylePresetId;
+  selectName: (name: string) => void;
   setAudience: (value: string) => void;
   setBusinessName: (value: string) => void;
   setDescription: (value: string) => void;
@@ -264,6 +320,7 @@ function BuilderPanel(props: {
   setPresetId: (value: StylePresetId) => void;
   setTagline: (value: string) => void;
   step: BuilderStep;
+  storeCheck: Record<"ios" | "android", StoreCheck>;
   tagline: string;
 }) {
   return (
@@ -278,7 +335,7 @@ function BuilderPanel(props: {
 
       <div className="form-grid">
         <label>
-          <span>Business Name</span>
+          <span>Startup Name</span>
           <input value={props.businessName} onChange={(event) => props.setBusinessName(event.target.value)} />
         </label>
         <label>
@@ -299,6 +356,37 @@ function BuilderPanel(props: {
         </label>
       </div>
 
+      <div className="naming-lab">
+        <div>
+          <p className="eyebrow">AI naming assistant</p>
+          <h3>Find a name before generating the brand.</h3>
+        </div>
+        <button className="secondary-button" onClick={props.generateNameIdeas} type="button">
+          <Sparkles size={18} /> Generate Name Ideas
+        </button>
+        <div className="name-chip-grid">
+          {props.nameIdeas.map((name) => (
+            <button className={props.businessName === name ? "name-chip active" : "name-chip"} key={name} onClick={() => props.selectName(name)} type="button">
+              {name}
+            </button>
+          ))}
+        </div>
+        <div className="store-check-grid">
+          <StoreCheckCard
+            detail="Search Apple App Store listings and app-name collisions before committing to brand assets."
+            onCheck={() => props.checkStore("ios")}
+            platform="iOS App Store"
+            status={props.storeCheck.ios}
+          />
+          <StoreCheckCard
+            detail="Search Google Play apps so the Android launch path does not inherit a name conflict."
+            onCheck={() => props.checkStore("android")}
+            platform="Google Play"
+            status={props.storeCheck.android}
+          />
+        </div>
+      </div>
+
       <div className="preset-grid">
         {stylePresets.map((preset) => (
           <button className={props.presetId === preset.id ? "preset active" : "preset"} key={preset.id} onClick={() => props.setPresetId(preset.id)} type="button">
@@ -311,6 +399,7 @@ function BuilderPanel(props: {
 
       <pre className="context-preview">{JSON.stringify({
         businessName: props.businessName,
+        storeNameChecks: props.storeCheck,
         style: stylePresets.find((item) => item.id === props.presetId)?.label,
         audience: props.audience,
         industry: props.industry,
@@ -374,6 +463,23 @@ function OutputPanel(props: {
         </div>
       </div>
     </section>
+  );
+}
+
+function StoreCheckCard({ detail, onCheck, platform, status }: { detail: string; onCheck: () => void; platform: string; status: StoreCheck }) {
+  const label = status === "checked" ? "Search Opened" : status === "checking" ? "Opening Search" : "Check Name";
+
+  return (
+    <article className={status === "checked" ? "store-check-card checked" : "store-check-card"}>
+      <div>
+        <Store size={22} />
+        <strong>{platform}</strong>
+      </div>
+      <p>{detail}</p>
+      <button className="secondary-button" onClick={onCheck} type="button">
+        <SearchCheck size={18} /> {label} <ExternalLink size={15} />
+      </button>
+    </article>
   );
 }
 

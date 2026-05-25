@@ -347,6 +347,81 @@ button:disabled {
   margin-top: 16px;
 }
 
+.naming-lab {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+  border: 1px solid #d8e0ea;
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 16px;
+}
+
+.naming-lab h3 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.name-chip-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.name-chip {
+  min-height: 38px;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #344054;
+  padding: 8px 12px;
+  font-weight: 800;
+}
+
+.name-chip.active {
+  border-color: #0f766e;
+  background: #0f766e;
+  color: #ffffff;
+}
+
+.store-check-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.store-check-card {
+  display: grid;
+  gap: 10px;
+  border: 1px solid #d8e0ea;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 14px;
+}
+
+.store-check-card.checked {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.store-check-card div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.store-check-card svg {
+  color: #0f766e;
+  flex: 0 0 auto;
+}
+
+.store-check-card p {
+  margin: 0;
+  color: #667085;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 .preset {
   display: grid;
   grid-template-columns: 24px 1fr;
@@ -528,7 +603,7 @@ button:disabled {
 
 .pipeline-band {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
   margin: 20px 0;
 }
@@ -611,6 +686,7 @@ button:disabled {
   .step-list,
   .form-grid,
   .preset-grid,
+  .store-check-grid,
   .tokens {
     grid-template-columns: 1fr;
   }
