@@ -46,24 +46,24 @@ type LogoMark = "Orbit" | "Spark" | "Stack" | "Shield" | "Wave" | "Monogram";
 type LogoMood = "Modern SaaS" | "Premium" | "Bold Consumer" | "Trust";
 
 const builderRoutes: Array<{ step: BuilderStep; label: string; path: string }> = [
-  { step: 1, label: "Name App", path: "/name-app" },
-  { step: 2, label: "Describe App", path: "/describe-app" },
-  { step: 3, label: "Choose Style", path: "/choose-style" },
-  { step: 4, label: "Store Check", path: "/store-check" },
-  { step: 5, label: "Brand Identity", path: "/brand-identity" },
-  { step: 6, label: "Website Assets", path: "/website-assets" },
-  { step: 7, label: "Landing Page", path: "/landing-page" },
-  { step: 8, label: "Export Kit", path: "/export-kit" }
+  { step: 1, label: "Name Startup", path: "/name-startup" },
+  { step: 2, label: "Describe Startup", path: "/describe-startup" },
+  { step: 3, label: "Brand Style", path: "/brand-style" },
+  { step: 4, label: "Brand Identity", path: "/brand-identity" },
+  { step: 5, label: "Visual Assets", path: "/visual-assets" },
+  { step: 6, label: "Landing Page", path: "/landing-page" },
+  { step: 7, label: "Launch Optimization", path: "/launch-optimization" },
+  { step: 8, label: "Export Startup Kit", path: "/export-kit" }
 ];
 
 const routeSectionIds: Record<BuilderStep, string> = {
-  1: "section-name-app",
-  2: "section-describe-app",
-  3: "section-choose-style",
-  4: "section-store-check",
-  5: "section-brand-identity",
-  6: "section-website-assets",
-  7: "section-landing-page",
+  1: "section-name-startup",
+  2: "section-describe-startup",
+  3: "section-brand-style",
+  4: "section-brand-identity",
+  5: "section-visual-assets",
+  6: "section-landing-page",
+  7: "section-launch-optimization",
   8: "section-export-kit"
 };
 
@@ -93,11 +93,11 @@ const systemCards = [
 ];
 
 const pipeline = [
-  "Name app and store check",
-  "Generate logo",
-  "Extract colors, typography, style direction",
-  "Send brand context to generators",
-  "Assemble startup kit"
+  "Name the startup",
+  "Generate brand identity",
+  "Create visual assets",
+  "Build the landing page",
+  "Optimize for launch"
 ];
 
 const namingAngles = ["Pilot", "Forge", "Stack", "Kit", "Signal", "Studio", "Base", "Lift"];
@@ -219,7 +219,7 @@ export function App() {
     await nextEngine.generateFavicon();
     setBrandProfile(nextEngine.getProfile());
     setAssetStatus((current) => ({ ...current, identity: true }));
-    goToStep(5);
+    goToStep(4);
     setGenerating(false);
   }
 
@@ -230,7 +230,7 @@ export function App() {
     await nextEngine.generateLogo();
     setBrandProfile(nextEngine.getProfile());
     setAssetStatus((current) => ({ ...current, identity: false }));
-    goToStep(5);
+    goToStep(4);
     setGenerating(false);
   }
 
@@ -246,7 +246,7 @@ export function App() {
     await nextEngine.generateFavicon();
     setBrandProfile(nextEngine.getProfile());
     setAssetStatus((current) => ({ ...current, identity: Boolean(nextEngine.getProfile().logo && nextEngine.getProfile().favicon) }));
-    goToStep(5);
+    goToStep(4);
     setGenerating(false);
   }
 
@@ -255,7 +255,7 @@ export function App() {
     await engine.generateHeroImage();
     setBrandProfile({ ...engine.getProfile() });
     setAssetStatus((current) => ({ ...current, website: true }));
-    goToStep(6);
+    goToStep(5);
     setGenerating(false);
   }
 
@@ -265,10 +265,10 @@ export function App() {
     await nextEngine.generateHeroImage();
     setBrandProfile({ ...nextEngine.getProfile() });
     setAssetStatus((current) => ({ ...current, website: true }));
-    if (window.location.pathname !== "/website-assets") {
-      window.history.pushState({ step: 6 }, "", "/website-assets");
+    if (window.location.pathname !== "/visual-assets") {
+      window.history.pushState({ step: 5 }, "", "/visual-assets");
     }
-    setStep(6);
+    setStep(5);
     setGenerating(false);
   }
 
@@ -285,7 +285,7 @@ export function App() {
     setBrandProfile(nextProfile);
     setCodeDraft(nextProfile.landingPage?.html ?? defaultLandingCode(nextProfile));
     setAssetStatus((current) => ({ ...current, landing: true }));
-    goToStep(7);
+    goToStep(6);
     setGenerating(false);
   }
 
@@ -302,10 +302,10 @@ export function App() {
     setBrandProfile(nextProfile);
     setCodeDraft(nextProfile.landingPage?.html ?? defaultLandingCode(nextProfile));
     setAssetStatus((current) => ({ ...current, landing: true }));
-    if (window.location.pathname !== "/website-assets") {
-      window.history.pushState({ step: 6 }, "", "/website-assets");
+    if (window.location.pathname !== "/visual-assets") {
+      window.history.pushState({ step: 5 }, "", "/visual-assets");
     }
-    setStep(6);
+    setStep(5);
     setGenerating(false);
   }
 
@@ -469,8 +469,8 @@ export function App() {
       <section className="workspace">
         <header className="topbar">
           <div>
-            <p className="eyebrow">Startup-focused branding system</p>
-            <h1>Launch a consistent brand identity, website kit, and landing page from one brand context.</h1>
+            <p className="eyebrow">LaunchOS workflow</p>
+            <h1>Name the startup, create the brand, generate visuals, build the page, and package everything for launch.</h1>
           </div>
           <div className="progress-card">
             <span>Startup kit</span>
@@ -590,7 +590,7 @@ function StepPage(props: {
   wantsApp: boolean;
   wantsWebsite: boolean;
 }) {
-  if (props.step <= 4) {
+  if (props.step <= 3) {
     return (
       <div className="step-page">
         <BuilderPanel
@@ -625,7 +625,7 @@ function StepPage(props: {
     );
   }
 
-  if (props.step === 5) {
+  if (props.step === 4) {
     return (
       <section className="hero-band step-page" id="section-brand-identity">
         <div className="hero-copy">
@@ -679,10 +679,13 @@ function StepPage(props: {
         generateHomepageAsset={props.generateHomepageAsset}
         generateWebsiteAssets={props.generateHeroImageAsset}
         generating={props.generating}
+        checkStore={props.checkStore}
+        launchTargets={props.launchTargets}
         regenerate={props.regenerate}
         setAiEditPrompt={props.setAiEditPrompt}
         setCodeDraft={props.setCodeDraft}
         step={props.step}
+        storeCheck={props.storeCheck}
         updateBrandColor={props.updateBrandColor}
         updateBrandStyle={props.updateBrandStyle}
         wantsApp={props.wantsApp}
@@ -720,23 +723,22 @@ function BuilderPanel(props: {
   tagline: string;
   toggleLaunchTarget: (target: keyof LaunchTargets) => void;
 }) {
-  const wantsApp = props.launchTargets.ios || props.launchTargets.android;
   const stepTitles: Record<BuilderStep, string> = {
-    1: "Name App",
-    2: "Describe App",
-    3: "Choose Style",
-    4: "Store Check",
-    5: "Brand Identity",
-    6: "Website Assets",
-    7: "Landing Page",
-    8: "Export Kit"
+    1: "Name Your Startup",
+    2: "Describe Your Startup",
+    3: "Choose Brand Style",
+    4: "Brand Identity",
+    5: "Visual Assets",
+    6: "Landing Page",
+    7: "Launch Optimization",
+    8: "Export Startup Kit"
   };
 
   return (
     <section className="panel single-step-panel">
       <div className="section-head">
         <div>
-          <p className="eyebrow">Startup builder flow</p>
+          <p className="eyebrow">LaunchOS workflow</p>
           <h2>{stepTitles[props.step]}</h2>
         </div>
         <Workflow size={24} />
@@ -745,8 +747,8 @@ function BuilderPanel(props: {
       {props.step === 1 ? (
         <>
       <div className="form-grid">
-        <label id="section-name-app">
-          <span>App Name</span>
+        <label id="section-name-startup">
+          <span>Business or App Name</span>
           <input value={props.businessName} onChange={(event) => props.setBusinessName(event.target.value)} />
         </label>
         <label>
@@ -757,11 +759,11 @@ function BuilderPanel(props: {
 
       <div className="naming-lab">
         <div>
-          <p className="eyebrow">AI app naming assistant</p>
-          <h3>Find an app name before generating the brand.</h3>
+          <p className="eyebrow">AI naming assistant</p>
+          <h3>Find a startup name that people can remember.</h3>
         </div>
         <button className="secondary-button" onClick={props.generateNameIdeas} type="button">
-          <Sparkles size={18} /> Generate App Names
+          <Sparkles size={18} /> Generate Names
         </button>
         <div className="name-chip-grid">
           {props.nameIdeas.map((name) => (
@@ -785,8 +787,8 @@ function BuilderPanel(props: {
               <span>Audience</span>
               <input value={props.audience} onChange={(event) => props.setAudience(event.target.value)} />
             </label>
-            <label className="wide" id="section-describe-app">
-              <span>Describe App</span>
+            <label className="wide" id="section-describe-startup">
+              <span>What does the startup do?</span>
               <textarea value={props.description} onChange={(event) => props.setDescription(event.target.value)} rows={6} />
             </label>
           </div>
@@ -824,7 +826,7 @@ function BuilderPanel(props: {
       ) : null}
 
       {props.step === 3 ? (
-      <div className="preset-grid" id="section-choose-style">
+      <div className="preset-grid" id="section-brand-style">
         {stylePresets.map((preset) => (
           <button className={props.presetId === preset.id ? "preset active" : "preset"} key={preset.id} onClick={() => props.setPresetId(preset.id)} type="button">
             <span style={{ background: preset.colors.primary }} />
@@ -835,33 +837,6 @@ function BuilderPanel(props: {
       </div>
       ) : null}
 
-      {props.step === 4 ? (
-        <div className="store-check-grid" id="section-store-check">
-          {props.launchTargets.ios ? (
-            <StoreCheckCard
-              detail="Search Apple App Store listings and app-name collisions before committing to brand assets."
-              onCheck={() => props.checkStore("ios")}
-              platform="iOS App Store"
-              status={props.storeCheck.ios}
-            />
-          ) : null}
-          {props.launchTargets.android ? (
-            <StoreCheckCard
-              detail="Search Google Play apps so the Android launch path does not inherit a name conflict."
-              onCheck={() => props.checkStore("android")}
-              platform="Google Play"
-              status={props.storeCheck.android}
-            />
-          ) : null}
-          {!wantsApp ? (
-            <div className="store-skip">
-              <Globe2 size={22} />
-              <strong>App store checks skipped</strong>
-              <span>Website-only projects do not need iOS or Android name checks.</span>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
     </section>
   );
 }
@@ -872,6 +847,7 @@ function OutputPanel(props: {
   aiEditStatus: string;
   applyAiBrandEdit: () => void;
   brandProfile: BrandProfile;
+  checkStore: (platform: "ios" | "android") => void;
   clipboardStatus: string;
   codeDraft: string;
   copyCodeDraft: () => void;
@@ -881,10 +857,12 @@ function OutputPanel(props: {
   generateLandingPage: () => void;
   generateWebsiteAssets: () => void;
   generating: boolean;
+  launchTargets: LaunchTargets;
   regenerate: (preset: StylePresetId) => void;
   setAiEditPrompt: (value: string) => void;
   setCodeDraft: (value: string) => void;
   step: BuilderStep;
+  storeCheck: Record<"ios" | "android", StoreCheck>;
   updateBrandColor: (name: keyof BrandProfile["colors"], value: string) => void;
   updateBrandStyle: (value: string) => void;
   wantsApp: boolean;
@@ -899,15 +877,15 @@ function OutputPanel(props: {
     <section className="panel single-step-panel">
       <div className="section-head">
         <div>
-          <p className="eyebrow">Generated outputs</p>
-          <h2>{props.step === 6 ? "Website/App Assets" : props.step === 7 ? "Landing Page" : "Export Kit"}</h2>
+          <p className="eyebrow">LaunchOS outputs</p>
+          <h2>{props.step === 5 ? "Visual Assets" : props.step === 6 ? "Landing Page" : props.step === 7 ? "Launch Optimization" : "Export Startup Kit"}</h2>
         </div>
         <Archive size={24} />
       </div>
 
       <div className="output-stack">
-        {props.step === 6 ? (
-          <div className="website-flow" id="section-website-assets">
+        {props.step === 5 ? (
+          <div className="website-flow" id="section-visual-assets">
             <BrandEditPanel
               aiEditPrompt={props.aiEditPrompt}
               aiEditStatus={props.aiEditStatus}
@@ -923,34 +901,40 @@ function OutputPanel(props: {
               profile={props.brandProfile}
               wantsApp={props.wantsApp}
             />
+            <VisualAssetGrid wantsApp={props.wantsApp} wantsWebsite={props.wantsWebsite} />
+          </div>
+        ) : null}
+        {props.step === 6 && props.wantsWebsite ? (
+          <div id="section-landing-page">
             <HomepageSection
               codeDraft={props.codeDraft}
               generating={props.generating}
-              onGenerate={props.generateHomepageAsset}
+              onGenerate={props.generateLandingPage}
               profile={props.brandProfile}
               wantsWebsite={props.wantsWebsite}
             />
+            <OutputRow done={props.assetStatus.landing} icon={Layers3} title="Landing Page" detail="Homepage, CTA sections, pricing blocks, testimonials" />
           </div>
         ) : null}
-        {props.step === 7 && props.wantsWebsite ? (
-          <OutputRow done={props.assetStatus.landing} icon={Layers3} id="section-landing-page" title="Landing Page" detail="Homepage, CTA sections, pricing blocks, testimonials" />
-        ) : null}
-        {props.step === 7 && !props.wantsWebsite ? (
+        {props.step === 6 && !props.wantsWebsite ? (
           <OutputRow done={true} icon={Layers3} id="section-landing-page" title="Landing Page Skipped" detail="App-only launch kits do not require a website landing page." />
         ) : null}
+        {props.step === 7 ? (
+          <LaunchOptimizationPanel
+            launchTargets={props.launchTargets}
+            storeCheck={props.storeCheck}
+            checkStore={props.checkStore}
+            wantsApp={props.wantsApp}
+          />
+        ) : null}
         {props.step === 8 ? (
-          <OutputRow done={props.assetStatus.export} icon={Download} id="section-export-kit" title="ZIP Export" detail="Logos, SVGs, code, favicon package, palette, fonts" />
+          <OutputRow done={props.assetStatus.export} icon={Download} id="section-export-kit" title="ZIP Export" detail="Logos, SVGs, app icons, favicons, hero images, landing page code, social kit, and brand guide" />
         ) : null}
       </div>
 
       <div className="button-grid">
-        {props.step === 6 && !props.assetStatus.identity ? (
+        {props.step === 5 && !props.assetStatus.identity ? (
           <p className="output-note">Generate the brand identity first so the hero image can pull the logo, colors, typography, and style direction.</p>
-        ) : null}
-        {props.step === 7 ? (
-        <button className="secondary-button" disabled={!props.wantsWebsite || !props.assetStatus.website || props.generating} onClick={props.generateLandingPage} type="button">
-          <Globe2 size={18} /> Generate Landing Page
-        </button>
         ) : null}
         {props.step === 8 ? (
         <button className="primary-button" disabled={!canExport} onClick={props.exportStartupKit} type="button">
@@ -959,7 +943,7 @@ function OutputPanel(props: {
         ) : null}
       </div>
 
-      {props.step === 7 && !props.wantsWebsite ? (
+      {props.step === 6 && !props.wantsWebsite ? (
         <p className="output-note">Landing page generation is disabled because this kit is set to app-only.</p>
       ) : null}
 
@@ -1027,6 +1011,61 @@ function StoreCheckCard({ detail, onCheck, platform, status }: { detail: string;
         <SearchCheck size={18} /> {label} <ExternalLink size={15} />
       </button>
     </article>
+  );
+}
+
+function LaunchOptimizationPanel({
+  checkStore,
+  launchTargets,
+  storeCheck,
+  wantsApp
+}: {
+  checkStore: (platform: "ios" | "android") => void;
+  launchTargets: LaunchTargets;
+  storeCheck: Record<"ios" | "android", StoreCheck>;
+  wantsApp: boolean;
+}) {
+  return (
+    <div className="launch-optimization" id="section-launch-optimization">
+      <div className="mini-section">
+        <p className="eyebrow">Publishing phase</p>
+        <h3>Prepare the startup for stores, search, and social previews.</h3>
+        <p>Use the generated logo, hero image, colors, and typography to create app store screenshots, app descriptions, keywords, SEO metadata, Open Graph previews, and Twitter previews.</p>
+      </div>
+
+      <div className="store-check-grid">
+        {launchTargets.ios ? (
+          <StoreCheckCard
+            detail="Search Apple App Store listings before publishing the app name and App Store assets."
+            onCheck={() => checkStore("ios")}
+            platform="iOS App Store"
+            status={storeCheck.ios}
+          />
+        ) : null}
+        {launchTargets.android ? (
+          <StoreCheckCard
+            detail="Search Google Play apps before finalizing Android launch copy and graphics."
+            onCheck={() => checkStore("android")}
+            platform="Google Play"
+            status={storeCheck.android}
+          />
+        ) : null}
+        {!wantsApp ? (
+          <div className="store-skip">
+            <Globe2 size={22} />
+            <strong>App store checks skipped</strong>
+            <span>Website-only launches still get SEO metadata and social previews.</span>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="optimization-grid">
+        <OutputRow done={true} icon={Image} title="App Store Screenshots" detail="Visual direction for iPhone, Android, and tablet store graphics" />
+        <OutputRow done={true} icon={FileCode2} title="Descriptions + Keywords" detail="App descriptions, launch keywords, and positioning copy" />
+        <OutputRow done={true} icon={Globe2} title="SEO Metadata" detail="Title tags, meta descriptions, and search-ready page summaries" />
+        <OutputRow done={true} icon={ExternalLink} title="Social Previews" detail="Open Graph and Twitter card creative direction" />
+      </div>
+    </div>
   );
 }
 
@@ -1109,11 +1148,11 @@ function HeroImageSection({ generating, onGenerate, profile, wantsApp }: { gener
   return (
     <section className="asset-builder-section">
       <div className="asset-builder-copy">
-        <p className="eyebrow">Step 2</p>
-        <h3>Hero image</h3>
-        <p>{wantsApp ? "Create a launch visual that can work for the website, app store graphics, and product mockups." : "Create the main website hero visual from the edited brand context."}</p>
+        <p className="eyebrow">Unified visual asset phase</p>
+        <h3>Hero image and marketing graphics</h3>
+        <p>{wantsApp ? "Create one launch visual direction for the website, app screenshots, device mockups, store graphics, and social previews." : "Create the main website hero visual, social previews, and launch graphics from the edited brand context."}</p>
         <button className="primary-button" disabled={generating} onClick={onGenerate} type="button">
-          <Image size={18} /> Create Hero Image
+          <Image size={18} /> Generate Visual Assets
         </button>
       </div>
       <div className="asset-preview-frame">
@@ -1123,15 +1162,36 @@ function HeroImageSection({ generating, onGenerate, profile, wantsApp }: { gener
   );
 }
 
+function VisualAssetGrid({ wantsApp, wantsWebsite }: { wantsApp: boolean; wantsWebsite: boolean }) {
+  const assets = [
+    { icon: Image, title: "Hero Image", detail: wantsWebsite ? "Website hero artwork that matches the logo, colors, and typography." : "Launch hero artwork for app marketing surfaces." },
+    { icon: FileImage, title: "App Screenshots", detail: wantsApp ? "iOS and Android screenshot direction for store listings." : "Skipped unless an app target is selected." },
+    { icon: Boxes, title: "Device Mockups", detail: wantsApp ? "Phone and tablet mockup direction for ads, decks, and store pages." : "Website-only product mockup direction." },
+    { icon: ExternalLink, title: "Social Previews", detail: "Open Graph, Twitter card, and founder launch post visuals." }
+  ];
+
+  return (
+    <div className="visual-asset-grid">
+      {assets.map(({ detail, icon: Icon, title }) => (
+        <article className="visual-asset-card" key={title}>
+          <Icon size={22} />
+          <strong>{title}</strong>
+          <p>{detail}</p>
+        </article>
+      ))}
+    </div>
+  );
+}
+
 function HomepageSection({ codeDraft, generating, onGenerate, profile, wantsWebsite }: { codeDraft: string; generating: boolean; onGenerate: () => void; profile: BrandProfile; wantsWebsite: boolean }) {
   return (
     <section className="asset-builder-section">
       <div className="asset-builder-copy">
-        <p className="eyebrow">Step 3</p>
-        <h3>Homepage</h3>
+        <p className="eyebrow">Consistent website generation</p>
+        <h3>Landing page</h3>
         <p>{wantsWebsite ? "Generate the homepage after the hero image so the page uses the same colors, type, and visual direction." : "Website generation is skipped because this launch is currently set to app-only."}</p>
         <button className="primary-button" disabled={!wantsWebsite || generating} onClick={onGenerate} type="button">
-          <Globe2 size={18} /> Create Homepage
+          <Globe2 size={18} /> Generate Landing Page
         </button>
       </div>
       <div className="homepage-preview" style={{ background: profile.colors.background, color: profile.colors.text }}>
@@ -1586,7 +1646,14 @@ const crcTable = Array.from({ length: 256 }, (_, index) => {
 
 function getStepFromPath(pathname: string): BuilderStep {
   const normalizedPath = pathname.replace(/\/+$/, "") || "/";
-  return builderRoutes.find((route) => route.path === normalizedPath)?.step ?? 1;
+  const legacyRoutes: Record<string, BuilderStep> = {
+    "/name-app": 1,
+    "/describe-app": 2,
+    "/choose-style": 3,
+    "/store-check": 7,
+    "/website-assets": 5
+  };
+  return builderRoutes.find((route) => route.path === normalizedPath)?.step ?? legacyRoutes[normalizedPath] ?? 1;
 }
 
 function scrollToStepSection(step: BuilderStep) {

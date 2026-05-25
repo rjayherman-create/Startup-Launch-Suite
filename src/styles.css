@@ -513,6 +513,42 @@ button:disabled {
   gap: 16px;
 }
 
+.visual-asset-grid,
+.optimization-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.visual-asset-card {
+  display: grid;
+  gap: 8px;
+  border: 1px solid #d8e0ea;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 14px;
+}
+
+.visual-asset-card svg {
+  color: #0f766e;
+}
+
+.visual-asset-card strong {
+  color: #07193a;
+}
+
+.visual-asset-card p {
+  margin: 0;
+  color: #667085;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.launch-optimization {
+  display: grid;
+  gap: 14px;
+}
+
 .asset-builder-section {
   display: grid;
   grid-template-columns: minmax(240px, 0.7fr) minmax(320px, 1fr);
@@ -1230,6 +1266,8 @@ button:disabled {
   .asset-builder-section,
   .target-grid,
   .store-check-grid,
+  .visual-asset-grid,
+  .optimization-grid,
   .tokens {
     grid-template-columns: 1fr;
   }
