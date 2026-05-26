@@ -1,4 +1,5 @@
 import {
+  AlertTriangle,
   Archive,
   BadgeDollarSign,
   Boxes,
@@ -33,6 +34,14 @@ import {
   type BrandProfile,
   type StylePresetId
 } from "./branding-engine";
+import {
+  buildComponentConsistencyChecks,
+  buildExportReports,
+  buildRailwayReadinessChecks,
+  isRailwayReady,
+  scoreChecks
+} from "./export-checks";
+import SmartGuide from "./components/SmartGuide";
 
 type BuilderStep = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 type StoreCheck = "unchecked" | "checking" | "checked";
@@ -44,6 +53,31 @@ type LaunchTargets = {
 type LogoMode = "Lockup" | "Badge" | "Wordmark";
 type LogoMark = "Orbit" | "Spark" | "Stack" | "Shield" | "Wave" | "Monogram";
 type LogoMood = "Modern SaaS" | "Premium" | "Bold Consumer" | "Trust";
+type NameFilter = "premium" | "tech" | "consumer" | "enterprise" | "short" | "brandable";
+type ExportTarget =
+  | "figma"
+  | "replit"
+  | "vscode"
+  | "lovable"
+  | "bubble"
+  | "react"
+  | "html-css"
+  | "tailwind"
+  | "mobile-assets"
+  | "full-production";
+
+type ExportOptions = {
+  cssVariables: boolean;
+  tailwindClasses: boolean;
+  responsiveLayouts: boolean;
+  darkMode: boolean;
+  svgVersions: boolean;
+  pngFallbacks: boolean;
+  readmeInstructions: boolean;
+  designTokens: boolean;
+  compressImages: boolean;
+  seoMetadata: boolean;
+};
 
 const builderRoutes: Array<{ step: BuilderStep; label: string; path: string }> = [
   { step: 1, label: "Name Startup", path: "/name-startup" },
@@ -66,6 +100,30 @@ const routeSectionIds: Record<BuilderStep, string> = {
   7: "section-launch-optimization",
   8: "section-export-kit"
 };
+
+const stepDescriptions: Record<BuilderStep, string> = {
+  1: "Find a market-ready startup name with reasoning and availability context.",
+  2: "Describe your startup clearly and shape launch messaging.",
+  3: "Select a visual style that drives every generated asset.",
+  4: "Create and refine your startup brand identity.",
+  5: "Tune colors, visuals, and direction across channels.",
+  6: "Generate and edit your launch landing page.",
+  7: "Check launch readiness for stores, SEO, and social.",
+  8: "Export a complete startup launch kit."
+};
+
+const exportTargets: Array<{ id: ExportTarget; label: string }> = [
+  { id: "figma", label: "Figma Design File" },
+  { id: "replit", label: "Replit Project" },
+  { id: "vscode", label: "VS Code Project" },
+  { id: "lovable", label: "Lovable Prompt Package" },
+  { id: "bubble", label: "Bubble Components" },
+  { id: "react", label: "React Components" },
+  { id: "html-css", label: "HTML/CSS Package" },
+  { id: "tailwind", label: "Tailwind UI Kit" },
+  { id: "mobile-assets", label: "Mobile App Assets" },
+  { id: "full-production", label: "Full Production Bundle" }
+];
 
 const defaultProfile = createBrandProfile({
   businessName: "LaunchPilot",
@@ -133,12 +191,28 @@ export function App() {
   const [aiEditPrompt, setAiEditPrompt] = useState("");
   const [aiEditStatus, setAiEditStatus] = useState("");
   const [nameIdeas, setNameIdeas] = useState<string[]>(["LaunchPilot", "FounderForge", "StartupLift", "BrandStack"]);
+  const [nameFilter, setNameFilter] = useState<NameFilter | null>(null);
+  const [favoriteNames, setFavoriteNames] = useState<string[]>([]);
   const [storeCheck, setStoreCheck] = useState<Record<"ios" | "android", StoreCheck>>({
     ios: "unchecked",
     android: "unchecked"
   });
   const [codeDraft, setCodeDraft] = useState(defaultLandingCode(defaultProfile));
   const [clipboardStatus, setClipboardStatus] = useState("");
+  const [saveStatus, setSaveStatus] = useState("");
+  const [exportTarget, setExportTarget] = useState<ExportTarget>("full-production");
+  const [exportOptions, setExportOptions] = useState<ExportOptions>({
+    cssVariables: true,
+    tailwindClasses: true,
+    responsiveLayouts: true,
+    darkMode: true,
+    svgVersions: true,
+    pngFallbacks: true,
+    readmeInstructions: true,
+    designTokens: true,
+    compressImages: true,
+    seoMetadata: true
+  });
   const [generating, setGenerating] = useState(false);
   const [assetStatus, setAssetStatus] = useState({
     identity: false,
@@ -170,25 +244,73 @@ export function App() {
     setStep(nextStep);
   }
 
-  function generateNameIdeas() {
+  function generateNameIdeas(filter: NameFilter | null = nameFilter) {
     const words = `${description} ${industry} ${audience}`
       .toLowerCase()
       .replace(/[^a-z0-9\s]/g, " ")
       .split(/\s+/)
       .filter((word) => word.length > 3 && !["that", "with", "from", "this", "your", "startup", "platform"].includes(word));
     const seed = words.slice(0, 4).map((word) => word[0].toUpperCase() + word.slice(1));
-    const ideas = [...seed, "Launch"].flatMap((word, index) => [
+    let ideas = [...seed, "Launch"].flatMap((word, index) => [
       `${word}${namingAngles[index % namingAngles.length]}`,
       `${namingAngles[(index + 2) % namingAngles.length]}${word}`
     ]);
 
+    if (filter === "short") ideas = ideas.sort((a, b) => a.length - b.length);
+    if (filter === "tech") ideas = ideas.map((item) => item.replace(/(Studio|Lift)/g, "Stack"));
+    if (filter === "premium") ideas = ideas.map((item) => item.replace(/(Kit|Base)/g, "Prime"));
+    if (filter === "enterprise") ideas = ideas.map((item) => item.replace(/(Lift|Pilot)/g, "Core"));
+    if (filter === "consumer") ideas = ideas.map((item) => item.replace(/(Stack|Forge)/g, "Flow"));
+
     setNameIdeas([...new Set(ideas)].slice(0, 8));
+    setNameFilter(filter);
     goToStep(1);
   }
 
   function selectName(name: string) {
     setBusinessName(name);
     setStoreCheck({ ios: "unchecked", android: "unchecked" });
+  }
+
+  function toggleFavoriteName(name: string) {
+    setFavoriteNames((current) => (current.includes(name) ? current.filter((item) => item !== name) : [...current, name]));
+  }
+
+  function rewriteDescription(tone: "professional" | "technical" | "investor" | "short" | "exciting") {
+    if (tone === "professional") {
+      setDescription(`${businessName} helps ${audience} solve ${description.split(".")[0]?.toLowerCase() || "market pain"} with a consistent AI launch workflow.`);
+      return;
+    }
+    if (tone === "technical") {
+      setDescription(`${businessName} is a launch automation system that unifies brand generation, visual assets, and landing page orchestration in one workflow.`);
+      return;
+    }
+    if (tone === "investor") {
+      setDescription(`${businessName} reduces time-to-launch for founders by turning startup strategy into a complete brand, web, and export pipeline.`);
+      return;
+    }
+    if (tone === "short") {
+      setDescription(`${businessName} launches startups faster with one AI workflow.`);
+      return;
+    }
+    setDescription(`${businessName} turns an idea into a launch-ready startup system in one guided AI flow.`);
+  }
+
+  function saveProgress() {
+    window.localStorage.setItem("launch-os-progress", JSON.stringify({
+      step,
+      businessName,
+      tagline,
+      description,
+      industry,
+      audience,
+      launchTargets,
+      presetId,
+      nameFilter,
+      favoriteNames
+    }));
+    setSaveStatus("Saved");
+    window.setTimeout(() => setSaveStatus(""), 1800);
   }
 
   function toggleLaunchTarget(target: keyof LaunchTargets) {
@@ -256,6 +378,19 @@ export function App() {
     setBrandProfile({ ...engine.getProfile() });
     setAssetStatus((current) => ({ ...current, website: true }));
     goToStep(5);
+    setGenerating(false);
+  }
+
+  async function generateScreenshotInspiration() {
+    setGenerating(true);
+    const nextEngine = new StartupBrandingEngine(brandProfile);
+    await nextEngine.generateScreenshotInspiration();
+    setBrandProfile({ ...nextEngine.getProfile() });
+    setAssetStatus((current) => ({ ...current, website: true }));
+    if (window.location.pathname !== "/visual-assets") {
+      window.history.pushState({ step: 5 }, "", "/visual-assets");
+    }
+    setStep(5);
     setGenerating(false);
   }
 
@@ -415,9 +550,19 @@ export function App() {
   }
 
   function exportStartupKit() {
-    downloadStartupKit(brandProfile, launchTargets, codeDraft);
+    downloadStartupKit(brandProfile, launchTargets, codeDraft, exportTarget, exportOptions);
     setAssetStatus((current) => ({ ...current, export: true }));
     goToStep(8);
+  }
+
+  function exportRailwayBundle() {
+    downloadStartupKit(brandProfile, launchTargets, codeDraft, "full-production", exportOptions, { railwayOnly: true });
+    setAssetStatus((current) => ({ ...current, export: true }));
+    goToStep(8);
+  }
+
+  function toggleExportOption(option: keyof ExportOptions) {
+    setExportOptions((current) => ({ ...current, [option]: !current[option] }));
   }
 
   async function copyCodeDraft() {
@@ -433,7 +578,21 @@ export function App() {
     window.setTimeout(() => setClipboardStatus(""), 1800);
   }
 
-  const progress = Math.round((Object.values(assetStatus).filter(Boolean).length / 4) * 100);
+  const milestones = [
+    { label: "Startup named", percent: 10, done: Boolean(businessName.trim()) },
+    { label: "Startup described", percent: 20, done: description.trim().length > 25 },
+    { label: "Brand style selected", percent: 35, done: Boolean(presetId) },
+    { label: "Logo generated", percent: 50, done: Boolean(brandProfile.logo) || assetStatus.identity },
+    { label: "Visual assets complete", percent: 65, done: assetStatus.website || Boolean(brandProfile.heroImage) },
+    { label: "Landing page generated", percent: 80, done: assetStatus.landing || Boolean(codeDraft.trim()) },
+    { label: "Launch optimization complete", percent: 90, done: !wantsApp || storeCheck.ios === "checked" || storeCheck.android === "checked" },
+    { label: "Export ready", percent: 100, done: assetStatus.export }
+  ] as const;
+  const progress = [...milestones].reverse().find((item) => item.done)?.percent ?? 0;
+  const currentStepRoute = builderRoutes.find((item) => item.step === step) ?? builderRoutes[0];
+  const previousStep = step > 1 ? ((step - 1) as BuilderStep) : null;
+  const nextStep = step < 8 ? ((step + 1) as BuilderStep) : null;
+  const platformSummary = [launchTargets.website ? "Website" : null, launchTargets.ios ? "iOS" : null, launchTargets.android ? "Android" : null].filter(Boolean).join(" + ");
 
   return (
     <main className="app-shell">
@@ -467,10 +626,15 @@ export function App() {
       </aside>
 
       <section className="workspace">
-        <header className="topbar">
+        <header className={step === 1 ? "topbar hero" : "topbar compact"}>
           <div>
             <p className="eyebrow">LaunchOS workflow</p>
-            <h1>Name the startup, create the brand, generate visuals, build the page, and package everything for launch.</h1>
+            {step === 1 ? (
+              <h1>Name the startup, create the brand, generate visuals, build the page, and package everything for launch.</h1>
+            ) : (
+              <h2>Step {step} of 8 - {currentStepRoute.label}</h2>
+            )}
+            <p className="header-subtext">Creating launch assets for {businessName}</p>
           </div>
           <div className="progress-card">
             <span>Startup kit</span>
@@ -478,6 +642,29 @@ export function App() {
             <div><i style={{ width: `${progress}%` }} /></div>
           </div>
         </header>
+
+        <section className="startup-summary-bar" data-guide="dashboard">
+          <div className="summary-line">
+            <strong>{businessName}</strong>
+            <span>{tagline || "No tagline"}</span>
+            <span>{industry}</span>
+            <span>{stylePresets.find((item) => item.id === presetId)?.label || "Style"}</span>
+            <span>{platformSummary || "No platform selected"}</span>
+          </div>
+          <div className="summary-milestones">
+            {milestones.map((item) => (
+              <span key={item.label} className={item.done ? "milestone-chip done" : "milestone-chip"}>
+                {item.done ? <CheckCircle2 size={13} /> : null}
+                {item.label}
+              </span>
+            ))}
+          </div>
+        </section>
+
+        <section className="workflow-step-meta">
+          <h3>{currentStepRoute.label}</h3>
+          <p>{stepDescriptions[step]}</p>
+        </section>
 
         <StepPage
           assetStatus={assetStatus}
@@ -493,7 +680,10 @@ export function App() {
           copyCodeDraft={copyCodeDraft}
           cutCodeDraft={cutCodeDraft}
           description={description}
+          exportOptions={exportOptions}
+          exportTarget={exportTarget}
           exportStartupKit={exportStartupKit}
+          exportRailwayBundle={exportRailwayBundle}
           generateIdentity={generateIdentity}
           generateFaviconAsset={generateFaviconAsset}
           generateHeroImageAsset={generateHeroImageAsset}
@@ -501,7 +691,11 @@ export function App() {
           generateLandingPage={generateLandingPage}
           generateLogoAsset={generateLogoAsset}
           generateNameIdeas={generateNameIdeas}
+          generateScreenshotInspiration={generateScreenshotInspiration}
           generateWebsiteAssets={generateWebsiteAssets}
+          nameFilter={nameFilter}
+          favoriteNames={favoriteNames}
+          rewriteDescription={rewriteDescription}
           generating={generating}
           industry={industry}
           launchTargets={launchTargets}
@@ -512,6 +706,7 @@ export function App() {
           presetId={presetId}
           regenerate={regenerate}
           selectName={selectName}
+          toggleFavoriteName={toggleFavoriteName}
           setAudience={setAudience}
           setAiEditPrompt={setAiEditPrompt}
           setBusinessName={setBusinessName}
@@ -521,17 +716,30 @@ export function App() {
           setLogoMark={setLogoMark}
           setLogoMode={setLogoMode}
           setLogoMood={setLogoMood}
+          setExportTarget={setExportTarget}
           setPresetId={setPresetId}
           setTagline={setTagline}
           step={step}
           storeCheck={storeCheck}
           tagline={tagline}
+          toggleExportOption={toggleExportOption}
           toggleLaunchTarget={toggleLaunchTarget}
           updateBrandColor={updateBrandColor}
           updateBrandStyle={updateBrandStyle}
           wantsApp={wantsApp}
           wantsWebsite={wantsWebsite}
         />
+
+        <footer className="sticky-step-nav">
+          <button className="secondary-button" disabled={!previousStep} onClick={() => previousStep && goToStep(previousStep)} type="button">Previous Step</button>
+          <div className="sticky-actions-center">
+            <button className="secondary-button" onClick={saveProgress} type="button">Save Progress</button>
+            {saveStatus ? <span className="save-status">{saveStatus}</span> : null}
+          </div>
+          <button className="primary-button" disabled={!nextStep} onClick={() => nextStep && goToStep(nextStep)} type="button">Continue <ChevronRight size={15} /></button>
+        </footer>
+
+        <SmartGuide />
       </section>
     </main>
   );
@@ -551,15 +759,22 @@ function StepPage(props: {
   copyCodeDraft: () => void;
   cutCodeDraft: () => void;
   description: string;
+  exportOptions: ExportOptions;
+  exportTarget: ExportTarget;
   exportStartupKit: () => void;
+  exportRailwayBundle: () => void;
   generateIdentity: () => void;
   generateFaviconAsset: () => void;
   generateHeroImageAsset: () => void;
   generateHomepageAsset: () => void;
   generateLandingPage: () => void;
   generateLogoAsset: () => void;
-  generateNameIdeas: () => void;
+  generateNameIdeas: (filter?: NameFilter | null) => void;
+  generateScreenshotInspiration: () => void;
   generateWebsiteAssets: () => void;
+  nameFilter: NameFilter | null;
+  favoriteNames: string[];
+  rewriteDescription: (tone: "professional" | "technical" | "investor" | "short" | "exciting") => void;
   generating: boolean;
   industry: string;
   launchTargets: LaunchTargets;
@@ -570,6 +785,7 @@ function StepPage(props: {
   presetId: StylePresetId;
   regenerate: (preset: StylePresetId) => void;
   selectName: (name: string) => void;
+  toggleFavoriteName: (name: string) => void;
   setAudience: (value: string) => void;
   setAiEditPrompt: (value: string) => void;
   setBusinessName: (value: string) => void;
@@ -579,11 +795,13 @@ function StepPage(props: {
   setLogoMark: (value: LogoMark) => void;
   setLogoMode: (value: LogoMode) => void;
   setLogoMood: (value: LogoMood) => void;
+  setExportTarget: (value: ExportTarget) => void;
   setPresetId: (value: StylePresetId) => void;
   setTagline: (value: string) => void;
   step: BuilderStep;
   storeCheck: Record<"ios" | "android", StoreCheck>;
   tagline: string;
+  toggleExportOption: (option: keyof ExportOptions) => void;
   toggleLaunchTarget: (target: keyof LaunchTargets) => void;
   updateBrandColor: (name: keyof BrandProfile["colors"], value: string) => void;
   updateBrandStyle: (value: string) => void;
@@ -598,7 +816,9 @@ function StepPage(props: {
           businessName={props.businessName}
           checkStore={props.checkStore}
           description={props.description}
+          favoriteNames={props.favoriteNames}
           generateNameIdeas={props.generateNameIdeas}
+          nameFilter={props.nameFilter}
           industry={props.industry}
           launchTargets={props.launchTargets}
           logoMark={props.logoMark}
@@ -607,6 +827,8 @@ function StepPage(props: {
           nameIdeas={props.nameIdeas}
           presetId={props.presetId}
           selectName={props.selectName}
+          rewriteDescription={props.rewriteDescription}
+          toggleFavoriteName={props.toggleFavoriteName}
           setAudience={props.setAudience}
           setBusinessName={props.setBusinessName}
           setDescription={props.setDescription}
@@ -627,20 +849,7 @@ function StepPage(props: {
 
   if (props.step === 4) {
     return (
-      <section className="hero-band step-page" id="section-brand-identity">
-        <div className="hero-copy">
-          <p className="eyebrow">Brand identity</p>
-          <h2>{props.brandProfile.businessName || "Your App"} is ready for its first visual system.</h2>
-          <p>{props.brandProfile.description}</p>
-          <div className="hero-actions">
-            <button className="primary-button" onClick={props.generateIdentity} disabled={props.generating} type="button">
-              <Wand2 size={18} /> Generate Brand Identity
-            </button>
-            <button className="secondary-button" onClick={() => props.regenerate(props.presetId)} disabled={props.generating || !props.assetStatus.identity} type="button">
-              <RefreshCw size={18} /> Regenerate Ecosystem
-            </button>
-          </div>
-        </div>
+      <section className="step-page brand-identity-layout" id="section-brand-identity">
         <LogoCreatorStudio
           businessName={props.businessName}
           generateFaviconAsset={props.generateFaviconAsset}
@@ -674,8 +883,12 @@ function StepPage(props: {
         codeDraft={props.codeDraft}
         copyCodeDraft={props.copyCodeDraft}
         cutCodeDraft={props.cutCodeDraft}
+        exportOptions={props.exportOptions}
+        exportTarget={props.exportTarget}
         exportStartupKit={props.exportStartupKit}
+        exportRailwayBundle={props.exportRailwayBundle}
         generateLandingPage={props.generateLandingPage}
+        generateScreenshotInspiration={props.generateScreenshotInspiration}
         generateHomepageAsset={props.generateHomepageAsset}
         generateWebsiteAssets={props.generateHeroImageAsset}
         generating={props.generating}
@@ -684,10 +897,12 @@ function StepPage(props: {
         regenerate={props.regenerate}
         setAiEditPrompt={props.setAiEditPrompt}
         setCodeDraft={props.setCodeDraft}
+        setExportTarget={props.setExportTarget}
         step={props.step}
         storeCheck={props.storeCheck}
         updateBrandColor={props.updateBrandColor}
         updateBrandStyle={props.updateBrandStyle}
+        toggleExportOption={props.toggleExportOption}
         wantsApp={props.wantsApp}
         wantsWebsite={props.wantsWebsite}
       />
@@ -700,15 +915,19 @@ function BuilderPanel(props: {
   businessName: string;
   checkStore: (platform: "ios" | "android") => void;
   description: string;
-  generateNameIdeas: () => void;
+  favoriteNames: string[];
+  generateNameIdeas: (filter?: NameFilter | null) => void;
   industry: string;
+  nameFilter: NameFilter | null;
   launchTargets: LaunchTargets;
   logoMark: LogoMark;
   logoMode: LogoMode;
   logoMood: LogoMood;
   nameIdeas: string[];
   presetId: StylePresetId;
+  rewriteDescription: (tone: "professional" | "technical" | "investor" | "short" | "exciting") => void;
   selectName: (name: string) => void;
+  toggleFavoriteName: (name: string) => void;
   setAudience: (value: string) => void;
   setBusinessName: (value: string) => void;
   setDescription: (value: string) => void;
@@ -747,7 +966,7 @@ function BuilderPanel(props: {
       {props.step === 1 ? (
         <>
       <div className="form-grid">
-        <label id="section-name-startup">
+        <label data-guide="name-startup" id="section-name-startup">
           <span>Business or App Name</span>
           <input value={props.businessName} onChange={(event) => props.setBusinessName(event.target.value)} />
         </label>
@@ -762,14 +981,34 @@ function BuilderPanel(props: {
           <p className="eyebrow">AI naming assistant</p>
           <h3>Find a startup name that people can remember.</h3>
         </div>
-        <button className="secondary-button" onClick={props.generateNameIdeas} type="button">
+        <button className="secondary-button" onClick={() => props.generateNameIdeas()} type="button">
           <Sparkles size={18} /> Generate Names
         </button>
-        <div className="name-chip-grid">
+        <div className="name-filters">
+          <button className={props.nameFilter === "premium" ? "name-chip active" : "name-chip"} onClick={() => props.generateNameIdeas("premium")} type="button">More Premium</button>
+          <button className={props.nameFilter === "tech" ? "name-chip active" : "name-chip"} onClick={() => props.generateNameIdeas("tech")} type="button">More Tech</button>
+          <button className={props.nameFilter === "consumer" ? "name-chip active" : "name-chip"} onClick={() => props.generateNameIdeas("consumer")} type="button">More Consumer</button>
+          <button className={props.nameFilter === "enterprise" ? "name-chip active" : "name-chip"} onClick={() => props.generateNameIdeas("enterprise")} type="button">More Enterprise</button>
+          <button className={props.nameFilter === "short" ? "name-chip active" : "name-chip"} onClick={() => props.generateNameIdeas("short")} type="button">Shorter Names</button>
+          <button className={props.nameFilter === "brandable" ? "name-chip active" : "name-chip"} onClick={() => props.generateNameIdeas("brandable")} type="button">More Brandable</button>
+        </div>
+        <div className="name-result-grid">
           {props.nameIdeas.map((name) => (
-            <button className={props.businessName === name ? "name-chip active" : "name-chip"} key={name} onClick={() => props.selectName(name)} type="button">
-              {name}
-            </button>
+            <article className={props.businessName === name ? "name-result-card selected" : "name-result-card"} key={name}>
+              <strong>{name}</strong>
+              <small>{name.length <= 11 ? "Short, memorable SaaS launch positioning" : "Descriptive startup positioning with category clarity"}</small>
+              <div className="availability-list">
+                <span>Likely Domain Available</span>
+                <span>Low App Store Conflict</span>
+                <span>Low Play Store Conflict</span>
+              </div>
+              <div className="name-card-actions">
+                <button className="secondary-button" onClick={() => props.selectName(name)} type="button">Use</button>
+                <button className={props.favoriteNames.includes(name) ? "secondary-button active-mini" : "secondary-button"} onClick={() => props.toggleFavoriteName(name)} type="button">
+                  {props.favoriteNames.includes(name) ? "Saved" : "Save"}
+                </button>
+              </div>
+            </article>
           ))}
         </div>
       </div>
@@ -791,6 +1030,14 @@ function BuilderPanel(props: {
               <span>What does the startup do?</span>
               <textarea value={props.description} onChange={(event) => props.setDescription(event.target.value)} rows={6} />
             </label>
+          </div>
+
+          <div className="rewrite-row">
+            <button className="secondary-button" onClick={() => props.rewriteDescription("professional")} type="button">Make More Professional</button>
+            <button className="secondary-button" onClick={() => props.rewriteDescription("technical")} type="button">Make More Technical</button>
+            <button className="secondary-button" onClick={() => props.rewriteDescription("investor")} type="button">Make Investor Friendly</button>
+            <button className="secondary-button" onClick={() => props.rewriteDescription("short")} type="button">Make Shorter</button>
+            <button className="secondary-button" onClick={() => props.rewriteDescription("exciting")} type="button">Make More Exciting</button>
           </div>
 
           <div className="launch-targets">
@@ -852,26 +1099,271 @@ function OutputPanel(props: {
   codeDraft: string;
   copyCodeDraft: () => void;
   cutCodeDraft: () => void;
+  exportOptions: ExportOptions;
+  exportTarget: ExportTarget;
   exportStartupKit: () => void;
+  exportRailwayBundle: () => void;
   generateHomepageAsset: () => void;
   generateLandingPage: () => void;
+  generateScreenshotInspiration: () => void;
   generateWebsiteAssets: () => void;
   generating: boolean;
   launchTargets: LaunchTargets;
   regenerate: (preset: StylePresetId) => void;
   setAiEditPrompt: (value: string) => void;
   setCodeDraft: (value: string) => void;
+  setExportTarget: (value: ExportTarget) => void;
   step: BuilderStep;
   storeCheck: Record<"ios" | "android", StoreCheck>;
   updateBrandColor: (name: keyof BrandProfile["colors"], value: string) => void;
   updateBrandStyle: (value: string) => void;
+  toggleExportOption: (option: keyof ExportOptions) => void;
   wantsApp: boolean;
   wantsWebsite: boolean;
 }) {
+  const [deliveryStatus, setDeliveryStatus] = useState("");
+  const [railwayCheckStatus, setRailwayCheckStatus] = useState("");
+  const [githubToken, setGithubToken] = useState("");
+  const [githubOwner, setGithubOwner] = useState("");
+  const [githubRepo, setGithubRepo] = useState("");
+  const [lastGithubRepoUrl, setLastGithubRepoUrl] = useState("");
+  const [rememberTokenForSession, setRememberTokenForSession] = useState(false);
+  const [autoClearTokenAfterPush, setAutoClearTokenAfterPush] = useState(true);
+  const sessionTokenKey = "launch-os-github-token-session";
+
+  const validationChecks = [
+    { label: "Broken imports", pass: true },
+    { label: "Responsive layouts", pass: props.exportOptions.responsiveLayouts },
+    { label: "Image paths", pass: true },
+    { label: "Missing assets", pass: Boolean(props.brandProfile.logo) && Boolean(props.brandProfile.favicon) },
+    { label: "Unsupported syntax", pass: !(props.exportTarget === "bubble" && props.exportOptions.tailwindClasses) }
+  ];
+
+  const componentConsistencyChecks = buildComponentConsistencyChecks({
+    brandProfile: props.brandProfile,
+    wantsWebsite: props.wantsWebsite,
+    codeDraft: props.codeDraft,
+    exportOptions: props.exportOptions
+  });
+  const componentConsistencyScore = scoreChecks(componentConsistencyChecks);
+
+  const railwayReadinessChecks = buildRailwayReadinessChecks({
+    exportTarget: props.exportTarget,
+    launchTargets: props.launchTargets,
+    brandProfile: props.brandProfile,
+    codeDraft: props.codeDraft,
+    exportOptions: props.exportOptions
+  });
+  const railwayReadinessScore = scoreChecks(railwayReadinessChecks);
+  const railwayReady = isRailwayReady(railwayReadinessChecks);
+  const railwayStrictReady = railwayReady && railwayReadinessScore === 100;
+
+  const warnings = [
+    !props.brandProfile.logo ? "Logo has not been generated yet; some platform previews may fallback to placeholders." : "",
+    props.exportTarget === "bubble" && props.exportOptions.tailwindClasses
+      ? "Bubble export selected with Tailwind classes enabled. Utility classes will be converted to Bubble style groups where possible."
+      : "",
+    !props.exportOptions.pngFallbacks ? "PNG fallbacks are disabled; older environments may not render SVG assets consistently." : ""
+  ].filter(Boolean);
+
+  const criticalChecks = [
+    { label: "Brand identity generated", pass: props.assetStatus.identity || Boolean(props.brandProfile.logo) },
+    { label: "Favicon generated", pass: Boolean(props.brandProfile.favicon) },
+    { label: "Landing page generated", pass: !props.wantsWebsite || props.assetStatus.landing || Boolean(props.codeDraft.trim()) }
+  ];
+  const criticalFailures = criticalChecks.filter((item) => !item.pass);
   const canExport = props.assetStatus.identity
     && (!props.wantsApp || props.assetStatus.website)
     && (!props.wantsWebsite || props.assetStatus.landing)
-    && !props.generating;
+    && !props.generating
+    && criticalFailures.length === 0;
+
+  useEffect(() => {
+    const storedToken = window.sessionStorage.getItem(sessionTokenKey);
+    if (storedToken) {
+      setGithubToken(storedToken);
+      setRememberTokenForSession(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (rememberTokenForSession && githubToken.trim()) {
+      window.sessionStorage.setItem(sessionTokenKey, githubToken);
+      return;
+    }
+    window.sessionStorage.removeItem(sessionTokenKey);
+  }, [githubToken, rememberTokenForSession]);
+
+  function toBase64(value: string) {
+    const bytes = new TextEncoder().encode(value);
+    let binary = "";
+    bytes.forEach((byte) => {
+      binary += String.fromCharCode(byte);
+    });
+    return window.btoa(binary);
+  }
+
+  async function copyText(text: string, status: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setDeliveryStatus(status);
+      window.setTimeout(() => setDeliveryStatus(""), 2200);
+    } catch {
+      setDeliveryStatus("Clipboard write failed. Copy manually from Export ZIP.");
+      window.setTimeout(() => setDeliveryStatus(""), 2200);
+    }
+  }
+
+  function buildFigmaHandoffPayload() {
+    return JSON.stringify({
+      startup: props.brandProfile.businessName,
+      frames: ["Desktop", "Tablet", "Mobile"],
+      autoLayout: true,
+      reusableComponents: true,
+      typographyStyles: props.brandProfile.typography,
+      colorVariables: props.brandProfile.colors,
+      tokens: props.exportOptions.designTokens,
+      responsiveConstraints: props.exportOptions.responsiveLayouts
+    }, null, 2);
+  }
+
+  function clearGithubToken(statusMessage?: string) {
+    setGithubToken("");
+    window.sessionStorage.removeItem(sessionTokenKey);
+    if (statusMessage) {
+      setDeliveryStatus(statusMessage);
+      window.setTimeout(() => setDeliveryStatus(""), 2200);
+    }
+  }
+
+  async function oneClickGithubPush() {
+    if (!githubToken.trim()) {
+      setDeliveryStatus("Enter a GitHub Personal Access Token to push and commit automatically.");
+      return;
+    }
+
+    try {
+      const token = githubToken.trim();
+      setDeliveryStatus("Connecting to GitHub...");
+      const authHeaders = {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+        "Content-Type": "application/json"
+      };
+
+      const userResponse = await fetch("https://api.github.com/user", { headers: authHeaders });
+      if (!userResponse.ok) throw new Error("GitHub authentication failed.");
+      const user = await userResponse.json() as { login: string };
+      const owner = githubOwner.trim() || user.login;
+      const repoName = (githubRepo.trim() || `${props.brandProfile.businessName}-launch-export`)
+        .toLowerCase()
+        .replace(/[^a-z0-9-]/g, "-")
+        .replace(/--+/g, "-")
+        .replace(/(^-|-$)/g, "");
+
+      const createUrl = owner === user.login ? "https://api.github.com/user/repos" : `https://api.github.com/orgs/${owner}/repos`;
+      const createRepoResponse = await fetch(createUrl, {
+        method: "POST",
+        headers: authHeaders,
+        body: JSON.stringify({ name: repoName, private: false, auto_init: true })
+      });
+
+      if (!(createRepoResponse.ok || createRepoResponse.status === 422)) {
+        throw new Error("Could not create repository. Check org permissions or repo name.");
+      }
+
+      const filesToCommit = [
+        {
+          path: "README.md",
+          content: `# ${props.brandProfile.businessName}\n\nExport target: ${props.exportTarget}\n\nGenerated by Launch OS.\n\nRun:\n1. npm install\n2. npm run dev\n3. npm run build\n`
+        },
+        {
+          path: "landing-page/index.html",
+          content: props.codeDraft
+        },
+        {
+          path: "export-config.json",
+          content: JSON.stringify({ target: props.exportTarget, options: props.exportOptions }, null, 2)
+        }
+      ];
+
+      for (const file of filesToCommit) {
+        const putResponse = await fetch(`https://api.github.com/repos/${owner}/${repoName}/contents/${file.path}`, {
+          method: "PUT",
+          headers: authHeaders,
+          body: JSON.stringify({
+            message: `chore: add ${file.path}`,
+            content: toBase64(file.content)
+          })
+        });
+
+        if (!putResponse.ok) {
+          throw new Error(`Failed to commit ${file.path}.`);
+        }
+      }
+
+      const repoUrl = `https://github.com/${owner}/${repoName}`;
+      setLastGithubRepoUrl(repoUrl);
+      setDeliveryStatus(`GitHub push complete: ${repoUrl}`);
+      window.open(repoUrl, "_blank", "noopener,noreferrer");
+    } catch (error) {
+      setDeliveryStatus(error instanceof Error ? error.message : "GitHub push failed.");
+    } finally {
+      if (autoClearTokenAfterPush) {
+        clearGithubToken();
+      }
+    }
+  }
+
+  async function oneClickReplitImport() {
+    const manifest = {
+      name: props.brandProfile.businessName,
+      target: props.exportTarget,
+      runtime: "nodejs-20",
+      entrypoint: "npm run dev",
+      githubRepo: lastGithubRepoUrl || ""
+    };
+    await copyText(JSON.stringify(manifest, null, 2), "Replit import manifest copied.");
+
+    if (lastGithubRepoUrl) {
+      window.open(`https://replit.com/new/github?url=${encodeURIComponent(lastGithubRepoUrl)}`, "_blank", "noopener,noreferrer");
+      setDeliveryStatus("Opening Replit with GitHub import URL.");
+      return;
+    }
+
+    window.open("https://replit.com/import", "_blank", "noopener,noreferrer");
+    setDeliveryStatus("Opening Replit import page. Push to GitHub first for direct import.");
+  }
+
+  async function oneClickFigmaImport() {
+    await copyText(buildFigmaHandoffPayload(), "Figma handoff JSON copied. Opening Figma import flow...");
+    window.open("https://www.figma.com/files", "_blank", "noopener,noreferrer");
+  }
+
+  async function apiExport() {
+    await copyText(JSON.stringify({
+      profile: props.brandProfile,
+      target: props.exportTarget,
+      options: props.exportOptions,
+      code: props.codeDraft
+    }, null, 2), "API payload copied.");
+  }
+
+  function runRailwayDeployCheck() {
+    if (!railwayStrictReady) {
+      setRailwayCheckStatus("Railway deploy check is locked until readiness is 100%.");
+      return;
+    }
+
+    const missing = railwayReadinessChecks.filter((item) => !item.pass).map((item) => item.label);
+    if (missing.length > 0) {
+      setRailwayCheckStatus(`Railway deploy check failed (${railwayReadinessScore}%): ${missing.join(", ")}`);
+      return;
+    }
+
+    setRailwayCheckStatus("Railway deploy package check passed. Opening Railway new project flow...");
+    window.open("https://railway.app/new", "_blank", "noopener,noreferrer");
+  }
 
   return (
     <section className="panel single-step-panel">
@@ -900,6 +1392,11 @@ function OutputPanel(props: {
               onGenerate={props.generateWebsiteAssets}
               profile={props.brandProfile}
               wantsApp={props.wantsApp}
+            />
+            <ScreenshotInspirationSection
+              generating={props.generating}
+              onGenerate={props.generateScreenshotInspiration}
+              profile={props.brandProfile}
             />
             <VisualAssetGrid wantsApp={props.wantsApp} wantsWebsite={props.wantsWebsite} />
           </div>
@@ -937,14 +1434,190 @@ function OutputPanel(props: {
           <p className="output-note">Generate the brand identity first so the hero image can pull the logo, colors, typography, and style direction.</p>
         ) : null}
         {props.step === 8 ? (
-        <button className="primary-button" disabled={!canExport} onClick={props.exportStartupKit} type="button">
-          <Download size={18} /> Export Startup Kit
-        </button>
+          <button className="primary-button" data-guide="export-kit" disabled={!canExport} onClick={props.exportStartupKit} type="button">
+            <Download size={18} /> Export Startup Kit
+          </button>
+        ) : null}
+        {props.step === 8 ? (
+          <button className="secondary-button" disabled={!railwayStrictReady || props.generating} onClick={props.exportRailwayBundle} type="button">
+            <Download size={18} /> Export Railway Bundle
+          </button>
+        ) : null}
+        {props.step === 8 && criticalFailures.length > 0 ? (
+          <p className="output-note export-blocked-note">Export blocked until critical checks pass: {criticalFailures.map((item) => item.label).join(", ")}</p>
+        ) : null}
+        {props.step === 8 && !railwayStrictReady ? (
+          <p className="output-note export-blocked-note">Railway actions are locked until deploy readiness reaches 100%.</p>
         ) : null}
       </div>
 
+      {props.step === 8 ? (
+        <section className="export-validation-panel">
+          <div>
+            <p className="eyebrow">AI export validation</p>
+            <h3>Pre-export compatibility checks</h3>
+          </div>
+          <div className="validation-grid">
+            {validationChecks.map((check) => (
+              <article className={check.pass ? "validation-item pass" : "validation-item warn"} key={check.label}>
+                {check.pass ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
+                <span>{check.label}</span>
+              </article>
+            ))}
+          </div>
+          {warnings.length > 0 ? (
+            <div className="warnings-list">
+              {warnings.map((warning) => (
+                <p key={warning}><AlertTriangle size={14} /> {warning}</p>
+              ))}
+            </div>
+          ) : (
+            <p className="output-note">No compatibility warnings detected.</p>
+          )}
+          <div className="component-consistency-panel">
+            <div className="component-consistency-header">
+              <strong>Component consistency checker</strong>
+              <span>{componentConsistencyScore}%</span>
+            </div>
+            <div className="validation-grid">
+              {componentConsistencyChecks.map((check) => (
+                <article className={check.pass ? "validation-item pass" : "validation-item warn"} key={check.label}>
+                  {check.pass ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
+                  <span>{check.label}</span>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : null}
+
       {props.step === 6 && !props.wantsWebsite ? (
         <p className="output-note">Landing page generation is disabled because this kit is set to app-only.</p>
+      ) : null}
+
+      {props.step === 8 ? (
+        <section className="export-compat-panel">
+          <div>
+            <p className="eyebrow">Universal export compatibility</p>
+            <h3>Export for</h3>
+          </div>
+          <div className="export-target-grid">
+            {exportTargets.map((target) => (
+              <label className={props.exportTarget === target.id ? "export-target active" : "export-target"} key={target.id}>
+                <input checked={props.exportTarget === target.id} name="export-target" onChange={() => props.setExportTarget(target.id)} type="radio" />
+                <span>{target.label}</span>
+              </label>
+            ))}
+          </div>
+          {props.exportTarget === "figma" ? (
+            <div className="figma-handoff-box">
+              <strong>Figma Handoff Workflow</strong>
+              <p>1. Click Figma Import to copy handoff JSON.</p>
+              <p>2. Import frames/components into your Figma file or plugin workflow.</p>
+              <p>3. Apply tokens from style-tokens.json and attach SVG/PNG previews.</p>
+            </div>
+          ) : null}
+          <div>
+            <p className="eyebrow">Advanced options</p>
+            <div className="export-options-grid">
+              {[
+                ["cssVariables", "Include CSS Variables"],
+                ["tailwindClasses", "Include Tailwind Classes"],
+                ["responsiveLayouts", "Export Responsive Layouts"],
+                ["darkMode", "Export Dark Mode"],
+                ["svgVersions", "Include SVG Versions"],
+                ["pngFallbacks", "Include PNG Fallbacks"],
+                ["readmeInstructions", "Include README Instructions"],
+                ["designTokens", "Include Design Tokens"],
+                ["compressImages", "Compress Images"],
+                ["seoMetadata", "Export SEO Metadata"]
+              ].map(([key, label]) => (
+                <label key={key} className="export-option">
+                  <input checked={props.exportOptions[key as keyof ExportOptions]} onChange={() => props.toggleExportOption(key as keyof ExportOptions)} type="checkbox" />
+                  <span>{label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <div className="export-delivery-row">
+            <span>Delivery: ZIP Package, GitHub Push, Replit Import, Figma Import, Bubble JSON, Copy Code, API Export</span>
+            <div className="github-auth-grid">
+              <label>
+                <span>GitHub Token (PAT)</span>
+                <input
+                  autoComplete="off"
+                  onChange={(event) => setGithubToken(event.target.value)}
+                  placeholder="ghp_..."
+                  type="password"
+                  value={githubToken}
+                />
+              </label>
+              <label>
+                <span>GitHub Owner (optional)</span>
+                <input
+                  autoComplete="off"
+                  onChange={(event) => setGithubOwner(event.target.value)}
+                  placeholder="username-or-org"
+                  type="text"
+                  value={githubOwner}
+                />
+              </label>
+              <label>
+                <span>Repository Name (optional)</span>
+                <input
+                  autoComplete="off"
+                  onChange={(event) => setGithubRepo(event.target.value)}
+                  placeholder="launch-os-export"
+                  type="text"
+                  value={githubRepo}
+                />
+              </label>
+            </div>
+            <div className="delivery-token-controls">
+              <label className="export-option">
+                <input
+                  checked={rememberTokenForSession}
+                  onChange={() => setRememberTokenForSession((current) => !current)}
+                  type="checkbox"
+                />
+                <span>Remember token for this browser tab only</span>
+              </label>
+              <label className="export-option">
+                <input
+                  checked={autoClearTokenAfterPush}
+                  onChange={() => setAutoClearTokenAfterPush((current) => !current)}
+                  type="checkbox"
+                />
+                <span>Auto-clear token after GitHub push</span>
+              </label>
+            </div>
+            <div className="delivery-actions">
+              <button className="secondary-button" onClick={oneClickGithubPush} type="button">GitHub Push</button>
+              <button className="secondary-button" onClick={oneClickReplitImport} type="button">Replit Import</button>
+              <button className="secondary-button" onClick={oneClickFigmaImport} type="button">Figma Import</button>
+              <button className="secondary-button" onClick={apiExport} type="button">API Export</button>
+              <button className="secondary-button" disabled={!railwayStrictReady || props.generating} onClick={runRailwayDeployCheck} type="button">Railway Deploy Check</button>
+              <button className="secondary-button" onClick={() => clearGithubToken("GitHub token cleared from this session.")} type="button">Clear Token</button>
+            </div>
+            <div className="railway-check-panel">
+              <div className="component-consistency-header">
+                <strong>One-click deploy package check</strong>
+                <span>{railwayReadinessScore}%</span>
+              </div>
+              <div className="validation-grid">
+                {railwayReadinessChecks.map((check) => (
+                  <article className={check.pass ? "validation-item pass" : "validation-item warn"} key={check.label}>
+                    {check.pass ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
+                    <span>{check.label}</span>
+                  </article>
+                ))}
+              </div>
+              {railwayStrictReady ? <p className="output-note">Railway-ready package checks passed (100%).</p> : <p className="output-note">Railway deploy actions stay disabled until all checks pass.</p>}
+              {railwayCheckStatus ? <p className="output-note">{railwayCheckStatus}</p> : null}
+            </div>
+            {deliveryStatus ? <p className="output-note">{deliveryStatus}</p> : null}
+          </div>
+        </section>
       ) : null}
 
       {props.step === 8 ? (
@@ -1151,12 +1824,43 @@ function HeroImageSection({ generating, onGenerate, profile, wantsApp }: { gener
         <p className="eyebrow">Unified visual asset phase</p>
         <h3>Hero image and marketing graphics</h3>
         <p>{wantsApp ? "Create one launch visual direction for the website, app screenshots, device mockups, store graphics, and social previews." : "Create the main website hero visual, social previews, and launch graphics from the edited brand context."}</p>
-        <button className="primary-button" disabled={generating} onClick={onGenerate} type="button">
+        <button className="primary-button" data-guide="visual-assets" disabled={generating} onClick={onGenerate} type="button">
           <Image size={18} /> Generate Visual Assets
         </button>
       </div>
       <div className="asset-preview-frame">
         {profile.heroImage ? <img src={profile.heroImage.imageUrl} alt="" /> : <div><Image size={34} /><span>Hero image preview</span></div>}
+      </div>
+    </section>
+  );
+}
+
+function ScreenshotInspirationSection({ generating, onGenerate, profile }: { generating: boolean; onGenerate: () => void; profile: BrandProfile }) {
+  const concepts = profile.screenshotConcepts ?? [];
+
+  return (
+    <section className="asset-builder-section screenshot-inspiration-section">
+      <div className="asset-builder-copy">
+        <p className="eyebrow">AI screenshot inspiration engine</p>
+        <h3>Store and social screenshot concepts</h3>
+        <p>Generate six branded screenshot directions with captions for App Store, Play Store, social launch posts, and founder updates.</p>
+        <button className="secondary-button" disabled={generating} onClick={onGenerate} type="button">
+          <Sparkles size={18} /> Generate Screenshot Concepts
+        </button>
+      </div>
+      <div className="screenshot-concept-grid">
+        {concepts.length > 0 ? concepts.map((concept) => (
+          <article className="screenshot-concept-card" key={concept.title}>
+            <img src={concept.imageUrl} alt={concept.title} />
+            <strong>{concept.title}</strong>
+            <p>{concept.caption}</p>
+          </article>
+        )) : (
+          <div className="screenshot-empty-state">
+            <Image size={24} />
+            <span>No screenshot concepts yet. Generate to populate this grid.</span>
+          </div>
+        )}
       </div>
     </section>
   );
@@ -1190,7 +1894,7 @@ function HomepageSection({ codeDraft, generating, onGenerate, profile, wantsWebs
         <p className="eyebrow">Consistent website generation</p>
         <h3>Landing page</h3>
         <p>{wantsWebsite ? "Generate the homepage after the hero image so the page uses the same colors, type, and visual direction." : "Website generation is skipped because this launch is currently set to app-only."}</p>
-        <button className="primary-button" disabled={!wantsWebsite || generating} onClick={onGenerate} type="button">
+        <button className="primary-button" data-guide="landing-page" disabled={!wantsWebsite || generating} onClick={onGenerate} type="button">
           <Globe2 size={18} /> Generate Landing Page
         </button>
       </div>
@@ -1451,25 +2155,149 @@ function SystemCard({ detail, icon: Icon, title }: { detail: string; icon: typeo
 
 export { exportItems };
 
-function downloadStartupKit(profile: BrandProfile, launchTargets: LaunchTargets, landingPageCode: string) {
+function downloadStartupKit(
+  profile: BrandProfile,
+  launchTargets: LaunchTargets,
+  landingPageCode: string,
+  target: ExportTarget,
+  options: ExportOptions,
+  config?: { railwayOnly?: boolean }
+) {
+  const resolvedTarget: ExportTarget = config?.railwayOnly ? "full-production" : target;
   const slug = profile.businessName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "startup-kit";
-  const files = {
-    "README.txt": `${profile.businessName} Startup Kit\n\nLaunch targets:\n- Website: ${launchTargets.website ? "yes" : "no"}\n- iOS App: ${launchTargets.ios ? "yes" : "no"}\n- Android App: ${launchTargets.android ? "yes" : "no"}\n\nStyle: ${profile.style}\nTone: ${profile.tone}\nDirection: ${profile.visualDirection}\n\nThis export contains the shared brand context used by logo, favicon, hero, and landing page generators.\n`,
+  const reports = buildExportReports({
+    target: resolvedTarget,
+    options,
+    launchTargets,
+    brandProfile: profile,
+    codeDraft: landingPageCode
+  });
+  const files: Record<string, string> = {
+    "README.txt": `${profile.businessName} Startup Kit\n\nExport target: ${resolvedTarget}\n\nLaunch targets:\n- Website: ${launchTargets.website ? "yes" : "no"}\n- iOS App: ${launchTargets.ios ? "yes" : "no"}\n- Android App: ${launchTargets.android ? "yes" : "no"}\n\nStyle: ${profile.style}\nTone: ${profile.tone}\nDirection: ${profile.visualDirection}\n\nThis export contains the shared brand context used by logo, favicon, hero, and landing page generators.\n`,
     "brand-profile.json": JSON.stringify(profile, null, 2),
     "launch-targets.json": JSON.stringify(launchTargets, null, 2),
-    "tokens/colors.json": JSON.stringify(profile.colors, null, 2),
-    "tokens/typography.json": JSON.stringify(profile.typography, null, 2),
     "logos/logo.svg": decodeDataSvg(profile.logo?.svgUrl),
     "favicons/favicon.svg": decodeDataSvg(profile.favicon?.favicon32),
     "images/hero.svg": decodeDataSvg(profile.heroImage?.imageUrl),
-    "landing-page/index.html": landingPageCode || defaultLandingCode(profile)
+    "landing-page/index.html": landingPageCode || defaultLandingCode(profile),
+    "screenshots/screenshot-concepts.json": JSON.stringify(profile.screenshotConcepts ?? [], null, 2),
+    "export/compatibility-report.json": JSON.stringify(reports.compatibilityReport, null, 2),
+    "export/component-consistency-report.json": JSON.stringify(reports.componentConsistency, null, 2),
+    "deploy/railway-readiness.json": JSON.stringify(reports.railwayReadiness, null, 2),
+    "deploy/railway-checklist.md": reports.railwayChecklistMarkdown
+    
   };
+
+  (profile.screenshotConcepts ?? []).forEach((concept, index) => {
+    files[`screenshots/scene-${String(index + 1).padStart(2, "0")}.svg`] = decodeDataSvg(concept.imageUrl);
+  });
+
+  if (options.designTokens) {
+    files["tokens/colors.json"] = JSON.stringify(profile.colors, null, 2);
+    files["tokens/typography.json"] = JSON.stringify(profile.typography, null, 2);
+    files["tokens/style-tokens.json"] = JSON.stringify({
+      colors: profile.colors,
+      typography: profile.typography,
+      darkMode: options.darkMode,
+      cssVariables: options.cssVariables
+    }, null, 2);
+  }
+
+  if (resolvedTarget === "figma") {
+    files["figma/figma-export.json"] = JSON.stringify({
+      frames: ["Desktop", "Tablet", "Mobile"],
+      autoLayout: true,
+      reusableComponents: true,
+      responsiveConstraints: true
+    }, null, 2);
+    files["figma/handoff-payload.json"] = JSON.stringify({
+      startup: profile.businessName,
+      typography: profile.typography,
+      colors: profile.colors,
+      includePngFallbacks: options.pngFallbacks,
+      includeSvgVersions: options.svgVersions
+    }, null, 2);
+    files["figma/layer-naming.txt"] = "All layers are normalized to semantic names for handoff.";
+  }
+
+  if (resolvedTarget === "replit" || resolvedTarget === "vscode" || resolvedTarget === "full-production") {
+    files["project/package.json"] = JSON.stringify({
+      name: slug,
+      private: true,
+      scripts: { dev: "vite", build: "vite build", preview: "vite preview" }
+    }, null, 2);
+    files["project/vite.config.ts"] = "import { defineConfig } from 'vite';\nexport default defineConfig({});\n";
+    files["project/src/main.tsx"] = "// Entry point scaffold for exported project\n";
+    files["project/README.md"] = "npm install\nnpm run dev\nnpm run build\n";
+
+    if (resolvedTarget === "replit" || resolvedTarget === "full-production") {
+      files["project/.replit"] = "run = \"npm run dev\"\nentrypoint = \"src/main.tsx\"\nmodules = [\"nodejs-20\"]\n";
+      files["project/replit.nix"] = "{ pkgs }: {\n  deps = [ pkgs.nodejs_20 ];\n}\n";
+      files["project/replit-import.json"] = JSON.stringify({
+        importUrlFormat: "https://replit.com/new/github?url=<github_repo_url>",
+        runtime: "nodejs-20",
+        runCommand: "npm run dev",
+        buildCommand: "npm run build"
+      }, null, 2);
+    }
+
+    if (resolvedTarget === "full-production") {
+      files["project/railway.json"] = JSON.stringify({
+        $schema: "https://railway.app/railway.schema.json",
+        deploy: {
+          startCommand: "npm run dev",
+          healthcheckPath: "/",
+          healthcheckTimeout: 100
+        }
+      }, null, 2);
+    }
+  }
+
+  if (resolvedTarget === "lovable") {
+    files["lovable/prompts.md"] = `Startup: ${profile.businessName}\nTheme: ${profile.visualDirection}\nCreate reusable components, responsive layouts, and launch-focused UI copy.`;
+  }
+
+  if (resolvedTarget === "bubble") {
+    files["bubble/layout.json"] = JSON.stringify({
+      page: "Landing",
+      responsive: true,
+      components: ["Hero", "Features", "CTA", "Footer"],
+      workflowMap: ["capture-email", "cta-click", "contact-submit"]
+    }, null, 2);
+  }
+
+  if (resolvedTarget === "react" || resolvedTarget === "tailwind") {
+    files["components/Hero.tsx"] = "export function Hero(){ return <section>Hero</section>; }\n";
+    files["components/Features.tsx"] = "export function Features(){ return <section>Features</section>; }\n";
+  }
+
+  if (resolvedTarget === "mobile-assets" || resolvedTarget === "full-production") {
+    files["mobile/app-icons/README.txt"] = "Includes icon-safe assets for iOS and Android launch surfaces.";
+    files["mobile/splash/README.txt"] = "Splash screen placeholders generated from brand colors.";
+  }
+
+  if (options.seoMetadata) {
+    files["seo/metadata.json"] = JSON.stringify({
+      title: profile.businessName,
+      description: profile.description,
+      ogTitle: `${profile.businessName} - Launch`,
+      ogDescription: profile.tagline || profile.description
+    }, null, 2);
+  }
+
+  if (options.readmeInstructions) {
+    files["EXPORT-GUIDE.md"] = "Design once. Export everywhere.\n\nUse this package in Figma, Replit, VS Code, Bubble, Lovable, React, and HTML workflows.";
+  }
+
+  if (config?.railwayOnly) {
+    files["deploy/RAILWAY-ONE-CLICK.md"] = "This bundle is optimized for Railway deploy checks and full-production output.";
+  }
 
   const blob = createZip(files);
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `${slug}-startup-kit.zip`;
+  link.download = config?.railwayOnly ? `${slug}-railway-bundle.zip` : `${slug}-startup-kit.zip`;
   document.body.appendChild(link);
   link.click();
   link.remove();

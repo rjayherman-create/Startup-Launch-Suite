@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Security Report</title>
+  <style>
+    body { font-family: Segoe UI, Arial, sans-serif; margin: 0; padding: 32px; background: #0b1220; color: #f8fafc; }
+    h1, h2 { margin: 0 0 14px 0; }
+    h2 { margin-top: 30px; }
+    .score { font-size: 24px; font-weight: 700; color: #22c55e; margin-bottom: 10px; }
+    .pass { color: #34d399; margin: 6px 0; }
+    .issue { color: #f87171; margin: 6px 0; }
+    .warning { color: #fbbf24; margin: 6px 0; }
+    .meta { color: #93c5fd; margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Universal Security Report</h1>
+  <div class="meta">Generated: 2026-05-26T12:34:51.081Z</div>
+  <div class="score">Security Score: 75%</div>
+
+  <h2>Passed</h2>
+  <div class="pass">[PASS] Clerk/auth protection patterns detected</div><div class="pass">[PASS] package.json found</div><div class="pass">[PASS] pnpm audit completed with no moderate+ findings</div>
+
+  <h2>Critical Issues</h2>
+  <div class="issue">[CRITICAL] Stripe webhook verification missing</div>
+
+  <h2>Warnings</h2>
+  <div class="warning">[WARN] No .env files found. Ensure production env vars are configured in Railway or deployment settings.</div><div class="warning">[WARN] No backend files detected. Helmet check skipped.</div><div class="warning">[WARN] No backend files detected. Rate limiter check skipped.</div><div class="warning">[WARN] Upload routes not detected.</div><div class="warning">[WARN] Railway config file not found (railway.json or nixpacks.toml).</div><div class="warning">[WARN] No start/start:prod/preview script found in package.json.</div>
+</body>
+</html>

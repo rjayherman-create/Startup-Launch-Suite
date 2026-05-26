@@ -1,0 +1,116 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`export check snapshots > snapshots component and railway checks 1`] = `
+{
+  "componentChecks": [
+    {
+      "label": "Brand colors complete",
+      "pass": true,
+    },
+    {
+      "label": "Typography configured",
+      "pass": true,
+    },
+    {
+      "label": "Logo + favicon parity",
+      "pass": true,
+    },
+    {
+      "label": "Hero + landing alignment",
+      "pass": true,
+    },
+    {
+      "label": "Design tokens enabled",
+      "pass": true,
+    },
+    {
+      "label": "Responsive export enabled",
+      "pass": true,
+    },
+  ],
+  "componentScore": 100,
+  "railwayChecks": [
+    {
+      "label": "Production target selected",
+      "pass": true,
+    },
+    {
+      "label": "Landing page available",
+      "pass": true,
+    },
+    {
+      "label": "Brand assets generated",
+      "pass": true,
+    },
+    {
+      "label": "SEO metadata enabled",
+      "pass": true,
+    },
+    {
+      "label": "README instructions enabled",
+      "pass": true,
+    },
+  ],
+  "railwayReady": true,
+  "railwayScore": 100,
+}
+`;
+
+exports[`export check snapshots > snapshots export reports 1`] = `
+{
+  "compatibilityReport": {
+    "checks": {
+      "brokenImports": false,
+      "imagePaths": true,
+      "missingAssets": false,
+      "responsiveLayouts": true,
+      "unsupportedSyntax": false,
+    },
+    "options": {
+      "compressImages": true,
+      "cssVariables": true,
+      "darkMode": true,
+      "designTokens": true,
+      "pngFallbacks": true,
+      "readmeInstructions": true,
+      "responsiveLayouts": true,
+      "seoMetadata": true,
+      "svgVersions": true,
+      "tailwindClasses": true,
+    },
+    "target": "full-production",
+    "warnings": [],
+  },
+  "componentConsistency": {
+    "checks": {
+      "brandColorsComplete": true,
+      "designTokensEnabled": true,
+      "heroAndLandingAlignment": true,
+      "logoAndFaviconParity": true,
+      "responsiveExportEnabled": true,
+      "typographyConfigured": true,
+    },
+    "score": 100,
+  },
+  "railwayChecklistMarkdown": "# Railway Deploy Checklist
+
+- Score: 100%
+- Production target selected: yes
+- Landing page available: yes
+- Brand assets generated: yes
+- SEO metadata enabled: yes
+- README instructions enabled: yes
+",
+  "railwayReadiness": {
+    "checks": {
+      "brandAssetsGenerated": true,
+      "landingPageAvailable": true,
+      "productionTargetSelected": true,
+      "readmeInstructionsEnabled": true,
+      "seoMetadataEnabled": true,
+    },
+    "passed": true,
+    "score": 100,
+  },
+}
+`;

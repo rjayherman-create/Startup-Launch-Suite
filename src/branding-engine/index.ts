@@ -29,6 +29,12 @@ export interface HeroImageAsset {
   prompt: string;
 }
 
+export interface ScreenshotConcept {
+  title: string;
+  caption: string;
+  imageUrl: string;
+}
+
 export interface LandingPageAsset {
   html: string;
   sections: string[];
@@ -48,6 +54,7 @@ export interface BrandProfile {
   logo?: LogoAsset;
   favicon?: FaviconAsset;
   heroImage?: HeroImageAsset;
+  screenshotConcepts?: ScreenshotConcept[];
   landingPage?: LandingPageAsset;
   generatedAt?: string;
   revision: number;
@@ -256,10 +263,49 @@ export class StartupBrandingEngine {
     return data;
   }
 
+  async generateScreenshotInspiration() {
+    const scenes = [
+      { title: "Welcome Flow", caption: "First-run onboarding with one decisive action and trust cues." },
+      { title: "Dashboard Value", caption: "Outcome-focused dashboard that surfaces momentum and progress." },
+      { title: "Feature Drilldown", caption: "Clear module detail view with contextual actions and quick wins." },
+      { title: "Mobile Capture", caption: "Phone-first interaction snapshot for App Store and Play listing." },
+      { title: "Social Proof", caption: "Testimonial + metric composition for conversion-oriented campaigns." },
+      { title: "Pricing CTA", caption: "Plan comparison plus high-clarity CTA above fold." }
+    ];
+
+    const concepts = scenes.map((scene, index) => {
+      const imageUrl = encodeSvg(`<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675">
+        <rect width="1200" height="675" fill="${this.brandProfile.colors.background}"/>
+        <rect x="48" y="42" width="1104" height="591" rx="28" fill="${this.brandProfile.colors.surface}"/>
+        <rect x="86" y="84" width="360" height="34" rx="10" fill="${this.brandProfile.colors.primary}" opacity="0.92"/>
+        <rect x="86" y="138" width="520" height="20" rx="8" fill="${this.brandProfile.colors.secondary}" opacity="0.55"/>
+        <rect x="86" y="178" width="460" height="20" rx="8" fill="${this.brandProfile.colors.accent}" opacity="0.65"/>
+        <rect x="86" y="238" width="1028" height="300" rx="20" fill="${this.brandProfile.colors.primary}" opacity="0.12"/>
+        <rect x="116" y="270" width="300" height="210" rx="16" fill="${this.brandProfile.colors.primary}" opacity="0.75"/>
+        <rect x="442" y="270" width="320" height="210" rx="16" fill="${this.brandProfile.colors.secondary}" opacity="0.35"/>
+        <rect x="786" y="270" width="300" height="210" rx="16" fill="${this.brandProfile.colors.accent}" opacity="0.46"/>
+        <text x="86" y="590" font-family="Inter, Arial" font-size="30" font-weight="800" fill="${this.brandProfile.colors.text}">${escapeSvg(this.brandProfile.businessName)} - ${scene.title}</text>
+        <text x="86" y="622" font-family="Inter, Arial" font-size="20" font-weight="600" fill="${this.brandProfile.colors.text}" opacity="0.72">${escapeSvg(scene.caption)}</text>
+        <text x="1120" y="620" text-anchor="end" font-family="Inter, Arial" font-size="18" font-weight="700" fill="${this.brandProfile.colors.text}" opacity="0.58">Scene ${index + 1}/6</text>
+      </svg>`);
+
+      return {
+        title: scene.title,
+        caption: scene.caption,
+        imageUrl
+      };
+    });
+
+    this.brandProfile.screenshotConcepts = concepts;
+    this.touch("Screenshot inspiration pack generated with shared brand direction.");
+    return concepts;
+  }
+
   async generateStartupKit() {
     await this.generateLogo();
     await this.generateFavicon();
     await this.generateHeroImage();
+    await this.generateScreenshotInspiration();
     await this.generateLandingPage();
     return {
       success: true,
