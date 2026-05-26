@@ -102,6 +102,43 @@ button:disabled {
   font-size: 13px;
 }
 
+.mobile-nav-bar,
+.mobile-nav-close,
+.mobile-nav-overlay {
+  display: none;
+}
+
+.mobile-nav-toggle,
+.mobile-nav-close {
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d8e0ea;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #172033;
+}
+
+.mobile-nav-toggle {
+  display: inline-flex;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px;
+  font-weight: 800;
+}
+
+.mobile-nav-close {
+  width: 40px;
+  height: 40px;
+  margin-left: auto;
+}
+
+.mobile-nav-title {
+  color: #667085;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
 .step-list {
   display: grid;
   gap: 8px;
@@ -2018,20 +2055,66 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 
+  .app-shell {
+    display: block;
+  }
+
   .rail {
-    min-height: auto;
-    border-right: 0;
-    border-bottom: 1px solid #d8e0ea;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 20;
+    width: min(320px, 84vw);
+    min-height: 100vh;
+    border-right: 1px solid #d8e0ea;
+    border-bottom: 0;
     gap: 14px;
-    padding: 14px 16px;
+    padding: 20px 16px 24px;
+    box-shadow: 0 20px 44px rgba(15, 23, 42, 0.18);
+    overflow-y: auto;
+    transform: translateX(-100%);
+    transition: transform 180ms ease;
+  }
+
+  .rail.mobile-open {
+    transform: translateX(0);
+  }
+
+  .mobile-nav-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 15;
+    display: block;
+    border: 0;
+    background: rgba(15, 23, 42, 0.36);
+  }
+
+  .mobile-nav-bar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: -28px -28px 20px;
+    padding: 14px 28px;
+    border-bottom: 1px solid #d8e0ea;
+    background: rgba(238, 242, 247, 0.94);
+    backdrop-filter: blur(14px);
+  }
+
+  .mobile-nav-close {
+    display: inline-flex;
   }
 
   .step-list {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: 1fr;
   }
 
   .suite-positioning {
-    display: none;
+    display: flex;
   }
 
   [id^="section-"] {
@@ -2060,6 +2143,11 @@ button:disabled {
   .workspace,
   .rail {
     padding: 16px;
+  }
+
+  .mobile-nav-bar {
+    margin: -16px -16px 18px;
+    padding: 12px 16px;
   }
 
   .topbar {

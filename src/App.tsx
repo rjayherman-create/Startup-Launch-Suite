@@ -14,6 +14,7 @@ import {
   Globe2,
   Image,
   Layers3,
+  Menu,
   Palette,
   RefreshCw,
   Rocket,
@@ -24,6 +25,7 @@ import {
   Type,
   Wand2,
   Workflow,
+  X,
   Zap
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -173,6 +175,7 @@ const logoMoods: LogoMood[] = ["Modern SaaS", "Premium", "Bold Consumer", "Trust
 
 export function App() {
   const [step, setStep] = useState<BuilderStep>(() => getStepFromPath(window.location.pathname));
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [businessName, setBusinessName] = useState(defaultProfile.businessName);
   const [tagline, setTagline] = useState(defaultProfile.tagline ?? "");
   const [description, setDescription] = useState(defaultProfile.description);
@@ -230,6 +233,10 @@ export function App() {
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
+
+  useEffect(() => {
+    setIsMobileNavOpen(false);
+  }, [step]);
 
   useEffect(() => {
     window.requestAnimationFrame(() => scrollToStepSection(step));
@@ -596,16 +603,21 @@ export function App() {
 
   return (
     <main className="app-shell">
-      <aside className="rail">
+      {isMobileNavOpen ? <button aria-label="Close navigation menu" className="mobile-nav-overlay" onClick={() => setIsMobileNavOpen(false)} type="button" /> : null}
+
+      <aside className={isMobileNavOpen ? "rail mobile-open" : "rail"}>
         <div className="brand-lockup">
           <div className="brand-mark"><Rocket size={24} /></div>
           <div>
             <strong>Launch OS</strong>
             <span>Startup Launch Suite</span>
           </div>
+          <button aria-label="Close navigation menu" className="mobile-nav-close" onClick={() => setIsMobileNavOpen(false)} type="button">
+            <X size={20} />
+          </button>
         </div>
 
-        <nav className="step-list" aria-label="Startup builder steps">
+        <nav className="step-list" id="startup-builder-steps" aria-label="Startup builder steps">
           {builderRoutes.map((route, index) => {
             return (
               <a className={step === route.step ? "step active" : "step"} href={route.path} key={route.path} onClick={(event) => {
@@ -626,6 +638,14 @@ export function App() {
       </aside>
 
       <section className="workspace">
+        <div className="mobile-nav-bar">
+          <button aria-controls="startup-builder-steps" aria-expanded={isMobileNavOpen} aria-label="Open navigation menu" className="mobile-nav-toggle" onClick={() => setIsMobileNavOpen(true)} type="button">
+            <Menu size={20} />
+            <span>Menu</span>
+          </button>
+          <span className="mobile-nav-title">Step {step} of 8</span>
+        </div>
+
         <header className={step === 1 ? "topbar hero" : "topbar compact"}>
           <div>
             <p className="eyebrow">LaunchOS workflow</p>
