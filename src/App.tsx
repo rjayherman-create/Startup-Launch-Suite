@@ -100,17 +100,6 @@ const legalRoutes: Array<{ id: LegalPageId; label: string; path: string }> = [
   { id: "ai-disclaimer", label: "AI Disclaimer", path: "/ai-disclaimer" }
 ];
 
-const routeSectionIds: Record<BuilderStep, string> = {
-  1: "section-name-startup",
-  2: "section-describe-startup",
-  3: "section-brand-style",
-  4: "section-brand-identity",
-  5: "section-visual-assets",
-  6: "section-landing-page",
-  7: "section-launch-optimization",
-  8: "section-export-kit"
-};
-
 const stepDescriptions: Record<BuilderStep, string> = {
   1: "Find a market-ready startup name with reasoning and availability context.",
   2: "Describe your startup clearly and shape launch messaging.",
@@ -244,6 +233,12 @@ export function App() {
   const wantsWebsite = launchTargets.website;
 
   useEffect(() => {
+    if ("scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
+    }
+  }, []);
+
+  useEffect(() => {
     const handlePopState = () => {
       setStep(getStepFromPath(window.location.pathname));
       setLegalPage(getLegalPageFromPath(window.location.pathname));
@@ -275,8 +270,8 @@ export function App() {
   }, [isMobileNavOpen]);
 
   useEffect(() => {
-    window.requestAnimationFrame(() => scrollToStepSection(step));
-  }, [step]);
+    schedulePageTopScroll();
+  }, [step, legalPage]);
 
   function goToStep(nextStep: BuilderStep, mode: "push" | "replace" = "push") {
     const route = builderRoutes.find((item) => item.step === nextStep) ?? builderRoutes[0];
@@ -286,6 +281,7 @@ export function App() {
     }
     setLegalPage(null);
     setStep(nextStep);
+    schedulePageTopScroll();
   }
 
   function goToLegalPage(nextPage: LegalPageId) {
@@ -294,6 +290,7 @@ export function App() {
     window.history.pushState({ legalPage: nextPage }, "", route.path);
     setLegalPage(nextPage);
     setIsMobileNavOpen(false);
+    schedulePageTopScroll();
   }
 
   function generateNameIdeas(filter: NameFilter | null = nameFilter) {
@@ -767,7 +764,7 @@ export function App() {
   const platformSummary = [launchTargets.website ? "Website" : null, launchTargets.ios ? "iOS" : null, launchTargets.android ? "Android" : null].filter(Boolean).join(" + ");
 
   return (
-    <main className="app-shell">
+    <main className="app-shell" id="page-top">
       {isMobileNavOpen ? <button aria-label="Close navigation menu" className="mobile-nav-overlay" onClick={() => setIsMobileNavOpen(false)} type="button" /> : null}
 
       <aside className={isMobileNavOpen ? "rail mobile-open" : "rail"}>
@@ -3263,12 +3260,22 @@ function getLegalPageFromPath(pathname: string): LegalPageId | null {
   return legalRoutes.find((route) => route.path === normalizedPath)?.id ?? null;
 }
 
-function scrollToStepSection(step: BuilderStep) {
-  const section = document.getElementById(routeSectionIds[step]);
-  if (!section) return;
+function schedulePageTopScroll() {
+  window.requestAnimationFrame(() => {
+    scrollToPageTop();
+    window.setTimeout(scrollToPageTop, 0);
+    window.setTimeout(scrollToPageTop, 120);
+  });
+}
 
-  section.scrollIntoView({
-    behavior: "smooth",
-    block: "start"
+function scrollToPageTop() {
+  const pageTop = document.getElementById("page-top");
+  if (pageTop) {
+    pageTop.scrollIntoView({ behavior: "auto", block: "start" });
+  }
+  window.scrollTo({
+    top: 0,
+    left: 0,
+    behavior: "auto"
   });
 }

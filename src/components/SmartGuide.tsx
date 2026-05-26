@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 import { Joyride, STATUS, type EventData, type Step } from "react-joyride";
 import Tippy from "@tippyjs/react";
 import "tippy.js/dist/tippy.css";
@@ -43,14 +43,6 @@ export function HelpTip({ children, text }: { children: ReactNode; text: string 
 export default function SmartGuide() {
   const [runTour, setRunTour] = useState(false);
   const [showHelpBubble, setShowHelpBubble] = useState(false);
-
-  useEffect(() => {
-    const completed = window.localStorage.getItem("smart-guide-completed");
-    if (completed) return;
-
-    const timer = window.setTimeout(() => setRunTour(true), 1200);
-    return () => window.clearTimeout(timer);
-  }, []);
 
   function handleJoyrideEvent(data: EventData) {
     if (data.status === STATUS.FINISHED || data.status === STATUS.SKIPPED) {
