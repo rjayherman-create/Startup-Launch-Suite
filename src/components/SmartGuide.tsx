@@ -130,7 +130,7 @@ export default function SmartGuide() {
 
 const floatingButtonStyle: CSSProperties = {
   position: "fixed",
-  bottom: 24,
+  bottom: 112,
   right: 24,
   width: 58,
   height: 58,
@@ -145,7 +145,7 @@ const floatingButtonStyle: CSSProperties = {
 
 const panelStyle: CSSProperties = {
   position: "fixed",
-  bottom: 95,
+  bottom: 184,
   right: 24,
   width: 340,
   background: "#ffffff",
