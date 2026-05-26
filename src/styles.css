@@ -197,6 +197,20 @@ button:disabled {
   margin: 0;
 }
 
+.legal-link-list {
+  display: grid;
+  gap: 6px;
+  margin-top: auto;
+  border-top: 1px solid #edf2f7;
+  padding-top: 12px;
+}
+
+.legal-link-list a {
+  color: #667085;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .workspace {
   min-width: 0;
   padding: 28px;
@@ -1957,6 +1971,50 @@ button:disabled {
   margin-bottom: 14px;
 }
 
+.legal-page {
+  display: grid;
+  gap: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-2xl);
+  background: #ffffff;
+  box-shadow: var(--shadow-sm);
+  padding: 22px;
+}
+
+.legal-page h2 {
+  margin: 0;
+  font-size: clamp(32px, 5vw, 58px);
+}
+
+.legal-page > p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.legal-section-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.legal-section-card {
+  border: 1px solid #d8e0ea;
+  border-radius: 12px;
+  background: #f8fafc;
+  padding: 14px;
+}
+
+.legal-section-card h3 {
+  margin: 0 0 8px;
+}
+
+.legal-section-card p {
+  margin: 0;
+  color: #667085;
+  line-height: 1.55;
+}
+
 .step-ai-panel h3 {
   margin: 3px 0 6px;
   color: #07193a;
@@ -2377,7 +2435,8 @@ button:disabled {
 
   .export-target-grid,
   .export-options-grid,
-  .validation-grid {
+  .validation-grid,
+  .legal-section-grid {
     grid-template-columns: 1fr;
   }
 

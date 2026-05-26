@@ -3,8 +3,21 @@ const RATE_LIMIT_MAX = 20;
 const rateLimitHits = new Map();
 
 export async function handleAiImproveStep(request, response) {
+  applyCors(request, response);
+
+  if (request.method === "OPTIONS") {
+    response.statusCode = 204;
+    response.end();
+    return;
+  }
+
   if (request.method !== "POST") {
     sendJson(response, 405, { error: "Method not allowed" });
+    return;
+  }
+
+  if (!isAuthorized(request)) {
+    sendJson(response, 401, { error: "AI route is protected." });
     return;
   }
 
@@ -24,6 +37,12 @@ export async function handleAiImproveStep(request, response) {
 
   try {
     const body = await readJsonBody(request);
+    const validationError = validateAiPayload(body);
+    if (validationError) {
+      sendJson(response, 400, { error: validationError });
+      return;
+    }
+
     const payload = buildOpenAiRequest(body);
     const openAiResponse = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
@@ -99,6 +118,22 @@ function buildOpenAiRequest(body) {
   };
 }
 
+function validateAiPayload(body) {
+  if (!body || typeof body !== "object") return "Request body must be a JSON object.";
+  const step = Number(body.step);
+  if (!Number.isInteger(step) || step < 1 || step > 8) return "Step must be a number from 1 to 8.";
+  for (const key of ["businessName", "description", "industry", "audience"]) {
+    if (typeof body[key] !== "string" || body[key].trim().length === 0) {
+      return `${key} is required.`;
+    }
+    if (body[key].length > 3_000) {
+      return `${key} is too long.`;
+    }
+  }
+  if (body.codeDraft && String(body.codeDraft).length > 120_000) return "codeDraft is too large.";
+  return "";
+}
+
 function summarizeCode(code) {
   if (!code) return "";
   return String(code).slice(0, 1200);
@@ -161,6 +196,26 @@ function sendJson(response, status, payload) {
   response.statusCode = status;
   response.setHeader("Content-Type", "application/json; charset=utf-8");
   response.end(JSON.stringify(payload));
+}
+
+function applyCors(request, response) {
+  const allowedOrigins = (process.env.ALLOWED_ORIGINS || "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  const origin = request.headers.origin;
+  if (origin && (allowedOrigins.length === 0 || allowedOrigins.includes(origin))) {
+    response.setHeader("Access-Control-Allow-Origin", origin);
+    response.setHeader("Vary", "Origin");
+  }
+  response.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+}
+
+function isAuthorized(request) {
+  const requiredToken = process.env.AI_API_ACCESS_TOKEN;
+  if (!requiredToken) return true;
+  return request.headers.authorization === `Bearer ${requiredToken}`;
 }
 
 function getClientId(request) {

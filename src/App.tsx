@@ -80,6 +80,7 @@ type ExportOptions = {
   compressImages: boolean;
   seoMetadata: boolean;
 };
+type LegalPageId = "privacy" | "terms" | "refund" | "ai-disclaimer";
 
 const builderRoutes: Array<{ step: BuilderStep; label: string; path: string }> = [
   { step: 1, label: "Name Startup", path: "/name-startup" },
@@ -90,6 +91,13 @@ const builderRoutes: Array<{ step: BuilderStep; label: string; path: string }> =
   { step: 6, label: "Landing Page", path: "/landing-page" },
   { step: 7, label: "Launch Optimization", path: "/launch-optimization" },
   { step: 8, label: "Export Startup Kit", path: "/export-kit" }
+];
+
+const legalRoutes: Array<{ id: LegalPageId; label: string; path: string }> = [
+  { id: "privacy", label: "Privacy", path: "/privacy" },
+  { id: "terms", label: "Terms", path: "/terms" },
+  { id: "refund", label: "Refund", path: "/refund-policy" },
+  { id: "ai-disclaimer", label: "AI Disclaimer", path: "/ai-disclaimer" }
 ];
 
 const routeSectionIds: Record<BuilderStep, string> = {
@@ -175,6 +183,7 @@ const logoMoods: LogoMood[] = ["Modern SaaS", "Premium", "Bold Consumer", "Trust
 
 export function App() {
   const [step, setStep] = useState<BuilderStep>(() => getStepFromPath(window.location.pathname));
+  const [legalPage, setLegalPage] = useState<LegalPageId | null>(() => getLegalPageFromPath(window.location.pathname));
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [businessName, setBusinessName] = useState(defaultProfile.businessName);
   const [tagline, setTagline] = useState(defaultProfile.tagline ?? "");
@@ -232,7 +241,10 @@ export function App() {
   const wantsWebsite = launchTargets.website;
 
   useEffect(() => {
-    const handlePopState = () => setStep(getStepFromPath(window.location.pathname));
+    const handlePopState = () => {
+      setStep(getStepFromPath(window.location.pathname));
+      setLegalPage(getLegalPageFromPath(window.location.pathname));
+    };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
@@ -269,7 +281,16 @@ export function App() {
       const update = mode === "replace" ? window.history.replaceState : window.history.pushState;
       update.call(window.history, { step: nextStep }, "", route.path);
     }
+    setLegalPage(null);
     setStep(nextStep);
+  }
+
+  function goToLegalPage(nextPage: LegalPageId) {
+    const route = legalRoutes.find((item) => item.id === nextPage);
+    if (!route) return;
+    window.history.pushState({ legalPage: nextPage }, "", route.path);
+    setLegalPage(nextPage);
+    setIsMobileNavOpen(false);
   }
 
   function generateNameIdeas(filter: NameFilter | null = nameFilter) {
@@ -711,6 +732,15 @@ export function App() {
           <Sparkles size={18} />
           <p>One guided launch system, not four separate tools.</p>
         </div>
+
+        <nav className="legal-link-list" aria-label="Legal and trust pages">
+          {legalRoutes.map((route) => (
+            <a href={route.path} key={route.id} onClick={(event) => {
+              event.preventDefault();
+              goToLegalPage(route.id);
+            }}>{route.label}</a>
+          ))}
+        </nav>
       </aside>
 
       <section className="workspace">
@@ -739,6 +769,10 @@ export function App() {
           </div>
         </header>
 
+        {legalPage ? (
+          <LegalPage page={legalPage} />
+        ) : (
+          <>
         <section className="startup-summary-bar" data-guide="dashboard">
           <div className="summary-line">
             <strong>{businessName}</strong>
@@ -844,8 +878,72 @@ export function App() {
         </footer>
 
         <SmartGuide />
+          </>
+        )}
       </section>
     </main>
+  );
+}
+
+function LegalPage({ page }: { page: LegalPageId }) {
+  const content: Record<LegalPageId, { title: string; summary: string; sections: Array<{ title: string; body: string }> }> = {
+    privacy: {
+      title: "Privacy Policy",
+      summary: "Plain-language privacy draft for Launch OS before public beta.",
+      sections: [
+        { title: "What we collect", body: "Project details you enter, generated brand context, export preferences, and basic usage events needed to operate the product." },
+        { title: "AI processing", body: "When live AI is enabled, the current step context may be sent to the secure server-side OpenAI route to generate suggestions." },
+        { title: "Secrets", body: "API keys must stay in server environment variables. Do not paste private keys into project descriptions or public export fields." },
+        { title: "Retention", body: "Until database persistence is added, most project work remains local to the browser session unless exported or pushed by the user." }
+      ]
+    },
+    terms: {
+      title: "Terms of Use",
+      summary: "Operating terms draft for the startup launch builder.",
+      sections: [
+        { title: "Use of the service", body: "Users are responsible for reviewing generated copy, code, names, and assets before publishing." },
+        { title: "Name checks", body: "Store and availability checks are research aids, not legal trademark clearance or guaranteed app-name approval." },
+        { title: "Generated outputs", body: "Exports are provided as editable launch assets. Users should test, customize, and validate them before production use." },
+        { title: "Production status", body: "Paid SaaS launch requires auth, billing, database persistence, and attorney-reviewed policies." }
+      ]
+    },
+    refund: {
+      title: "Refund Policy",
+      summary: "Starter policy draft for one-time startup packs and future subscriptions.",
+      sections: [
+        { title: "One-time packs", body: "Refund windows should be clearly stated before payment and may depend on whether exports have been generated or downloaded." },
+        { title: "Subscriptions", body: "Users should be able to cancel future renewals from billing settings once Stripe is connected." },
+        { title: "Service issues", body: "If a paid export fails because of a platform error, provide either a corrected export or a refund path." }
+      ]
+    },
+    "ai-disclaimer": {
+      title: "AI Disclaimer",
+      summary: "Trust and safety copy for AI-assisted startup launch output.",
+      sections: [
+        { title: "Human review required", body: "AI suggestions can be wrong, generic, or incomplete. Review all names, claims, prices, legal text, and code before publishing." },
+        { title: "No legal advice", body: "Store checks, SEO suggestions, and launch recommendations are not legal, trademark, tax, or financial advice." },
+        { title: "Brand originality", body: "Users should verify naming, logos, and copy against existing brands before public launch." },
+        { title: "Model availability", body: "Live OpenAI features require server configuration and may fall back to local brand-context logic if unavailable." }
+      ]
+    }
+  };
+  const selected = content[page];
+
+  return (
+    <section className="legal-page">
+      <p className="eyebrow">Legal and trust</p>
+      <h2>{selected.title}</h2>
+      <p>{selected.summary}</p>
+      <div className="legal-section-grid">
+        {selected.sections.map((section) => (
+          <article className="legal-section-card" key={section.title}>
+            <h3>{section.title}</h3>
+            <p>{section.body}</p>
+          </article>
+        ))}
+      </div>
+      <p className="output-note">Draft policy language only. Replace with attorney-reviewed production text before paid launch.</p>
+    </section>
   );
 }
 
@@ -2387,11 +2485,11 @@ function downloadStartupKit(
   }
 
   if (resolvedTarget === "replit" || resolvedTarget === "vscode" || resolvedTarget === "full-production") {
-    files["project/package.json"] = JSON.stringify({
-      name: slug,
-      private: true,
-      scripts: { dev: "vite", build: "vite build", preview: "vite preview" }
-    }, null, 2);
+      files["project/package.json"] = JSON.stringify({
+        name: slug,
+        private: true,
+        scripts: { dev: "vite", build: "vite build", start: "vite preview --host 0.0.0.0", preview: "vite preview" }
+      }, null, 2);
     files["project/vite.config.ts"] = "import { defineConfig } from 'vite';\nexport default defineConfig({});\n";
     files["project/src/main.tsx"] = "// Entry point scaffold for exported project\n";
     files["project/README.md"] = "npm install\nnpm run dev\nnpm run build\n";
@@ -2411,7 +2509,7 @@ function downloadStartupKit(
       files["project/railway.json"] = JSON.stringify({
         $schema: "https://railway.app/railway.schema.json",
         deploy: {
-          startCommand: "npm run dev",
+          startCommand: "npm start",
           healthcheckPath: "/",
           healthcheckTimeout: 100
         }
@@ -2458,6 +2556,26 @@ function downloadStartupKit(
   if (config?.railwayOnly) {
     files["deploy/RAILWAY-ONE-CLICK.md"] = "This bundle is optimized for Railway deploy checks and full-production output.";
   }
+
+  files["export/manifest.json"] = JSON.stringify({
+    generatedAt: new Date().toISOString(),
+    fileCount: Object.keys(files).length + 1,
+    target: resolvedTarget,
+    launchTargets,
+    includes: Object.keys(files).sort()
+  }, null, 2);
+  files["export/verification-checklist.md"] = [
+    "# Export Verification Checklist",
+    "",
+    "- Open `landing-page/index.html` in a browser.",
+    "- Confirm logo and favicon assets render.",
+    "- Confirm brand colors and typography match `brand-profile.json`.",
+    "- Review AI-generated copy before publishing.",
+    "- Replace legal placeholder text before paid launch.",
+    "- Run deployment checks for the selected platform."
+  ].join("\n");
+  files["legal/AI-DISCLAIMER.md"] = "AI output is a launch assistant, not legal, trademark, financial, or professional advice. Review all generated assets before publication.\n";
+  files["legal/PRIVACY-DRAFT.md"] = "Draft privacy notes: store only necessary user/project data, keep API keys server-side, and disclose AI processing before public launch.\n";
 
   const blob = createZip(files);
   const url = URL.createObjectURL(blob);
@@ -3022,6 +3140,11 @@ function getStepFromPath(pathname: string): BuilderStep {
     "/website-assets": 5
   };
   return builderRoutes.find((route) => route.path === normalizedPath)?.step ?? legacyRoutes[normalizedPath] ?? 1;
+}
+
+function getLegalPageFromPath(pathname: string): LegalPageId | null {
+  const normalizedPath = pathname.replace(/\/+$/, "") || "/";
+  return legalRoutes.find((route) => route.path === normalizedPath)?.id ?? null;
 }
 
 function scrollToStepSection(step: BuilderStep) {
