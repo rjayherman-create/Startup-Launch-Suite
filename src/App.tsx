@@ -349,7 +349,7 @@ export function App() {
     setStoreCheck((current) => ({ ...current, [platform]: "checking" }));
     const query = encodeURIComponent(businessName.trim());
     const url = platform === "ios"
-      ? `https://apps.apple.com/us/search?term=${query}`
+      ? `https://itunes.apple.com/search?country=us&media=software&term=${query}`
       : `https://play.google.com/store/search?q=${query}&c=apps`;
 
     window.open(url, "_blank", "noopener,noreferrer");
