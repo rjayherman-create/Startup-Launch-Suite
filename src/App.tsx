@@ -193,6 +193,7 @@ export function App() {
   const [brandProfile, setBrandProfile] = useState<BrandProfile>(defaultProfile);
   const [aiEditPrompt, setAiEditPrompt] = useState("");
   const [aiEditStatus, setAiEditStatus] = useState("");
+  const [stepAiInsight, setStepAiInsight] = useState("");
   const [nameIdeas, setNameIdeas] = useState<string[]>(["LaunchPilot", "FounderForge", "StartupLift", "BrandStack"]);
   const [nameFilter, setNameFilter] = useState<NameFilter | null>(null);
   const [favoriteNames, setFavoriteNames] = useState<string[]>([]);
@@ -574,6 +575,40 @@ export function App() {
     window.setTimeout(() => setAiEditStatus(""), 2200);
   }
 
+  function improveCurrentStep() {
+    const insight = buildStepAiInsight({
+      step,
+      businessName,
+      tagline,
+      description,
+      industry,
+      audience,
+      launchTargets,
+      brandProfile,
+      assetStatus,
+      codeDraft,
+      storeCheck,
+      exportTarget
+    });
+
+    setStepAiInsight(insight);
+
+    if (step === 1) {
+      generateNameIdeas(nameFilter);
+    }
+    if (step === 2) {
+      rewriteDescription("professional");
+    }
+    if (step === 3) {
+      setPresetId(industry.toLowerCase().includes("fintech") ? "premium-fintech" : industry.toLowerCase().includes("consumer") ? "bold-consumer" : "clean-saas");
+    }
+    if (step === 5) {
+      setAiEditPrompt("Make this more premium, clear, and conversion-focused while keeping the brand consistent.");
+      setAiEditStatus("AI prompt prepared for the Visual Assets brand editor.");
+      window.setTimeout(() => setAiEditStatus(""), 2200);
+    }
+  }
+
   function exportStartupKit() {
     downloadStartupKit(brandProfile, launchTargets, codeDraft, exportTarget, exportOptions);
     setAssetStatus((current) => ({ ...current, export: true }));
@@ -703,6 +738,12 @@ export function App() {
           <h3>{currentStepRoute.label}</h3>
           <p>{stepDescriptions[step]}</p>
         </section>
+
+        <StepAiPanel
+          insight={stepAiInsight}
+          onImprove={improveCurrentStep}
+          step={step}
+        />
 
         <StepPage
           assetStatus={assetStatus}
@@ -945,6 +986,32 @@ function StepPage(props: {
         wantsWebsite={props.wantsWebsite}
       />
     </div>
+  );
+}
+
+function StepAiPanel({ insight, onImprove, step }: { insight: string; onImprove: () => void; step: BuilderStep }) {
+  const stepActions: Record<BuilderStep, string> = {
+    1: "Generate stronger startup names and positioning angles.",
+    2: "Rewrite the description into clearer launch copy.",
+    3: "Recommend a brand style from the startup context.",
+    4: "Review logo, colors, typography, and app icon direction.",
+    5: "Prepare a sharper visual direction for assets and mockups.",
+    6: "Review the page for conversion structure and missing proof.",
+    7: "Prepare store, SEO, keyword, and social publishing guidance.",
+    8: "Review export readiness, deployment risk, and missing files."
+  };
+
+  return (
+    <section className="step-ai-panel">
+      <div>
+        <p className="eyebrow">AI assistant on this step</p>
+        <h3>{stepActions[step]}</h3>
+        <p>{insight || "OpenAI is not connected yet. This uses local brand-context intelligence now and is ready for a secure backend OpenAI endpoint later."}</p>
+      </div>
+      <button className="secondary-button ai-step-button" onClick={onImprove} type="button">
+        <Sparkles size={18} /> AI Improve This Step
+      </button>
+    </section>
   );
 }
 
@@ -2394,6 +2461,40 @@ function escapeHtml(value: string) {
     };
     return entities[character];
   });
+}
+
+function buildStepAiInsight(input: {
+  step: BuilderStep;
+  businessName: string;
+  tagline: string;
+  description: string;
+  industry: string;
+  audience: string;
+  launchTargets: LaunchTargets;
+  brandProfile: BrandProfile;
+  assetStatus: { identity: boolean; website: boolean; landing: boolean; export: boolean };
+  codeDraft: string;
+  storeCheck: Record<"ios" | "android", StoreCheck>;
+  exportTarget: ExportTarget;
+}) {
+  const launchMix = [
+    input.launchTargets.website ? "website" : null,
+    input.launchTargets.ios ? "iOS app" : null,
+    input.launchTargets.android ? "Android app" : null
+  ].filter(Boolean).join(", ");
+
+  const messages: Record<BuilderStep, string> = {
+    1: `${input.businessName || "This startup"} should feel memorable for ${input.audience}. AI refreshed name ideas and will favor names that are short, ownable, and clear for a ${input.industry} launch.`,
+    2: `AI tightened the description toward customer-facing launch copy for ${input.audience}. Next best improvement: make the first sentence explain the outcome, not only the tool.`,
+    3: `AI recommends a style that matches ${input.industry}: ${input.industry.toLowerCase().includes("fintech") ? "Premium Fintech" : input.industry.toLowerCase().includes("consumer") ? "Bold Consumer" : "Clean SaaS"}. This keeps the visual system easier to trust across ${launchMix || "the launch"}.`,
+    4: `AI review: the brand identity should express ${input.brandProfile.tone.toLowerCase()} trust, use ${input.brandProfile.typography.headingFont} for headlines, and keep favicon/app icon shapes simple enough to work at small sizes.`,
+    5: `AI prepared a stronger visual direction prompt. Use it to keep hero images, app screenshots, device mockups, and social previews aligned with ${input.brandProfile.style}.`,
+    6: `AI conversion review: the landing page should include hero, problem, benefits, proof, pricing, FAQ, and final CTA. Current code ${input.codeDraft.includes("final-cta") ? "already includes the stronger structure" : "needs regeneration to get the stronger structure"}.`,
+    7: `AI launch review: ${input.storeCheck.ios === "checked" || input.storeCheck.android === "checked" ? "store checks have started" : "run store checks before publishing"}. Add SEO title, app keywords, Open Graph copy, and store screenshot captions before export.`,
+    8: `AI export review: target is ${input.exportTarget}. ${input.assetStatus.identity && input.assetStatus.landing ? "Core launch assets are ready for packaging" : "Generate identity and landing page before final export"}; keep README, brand guide, and deployment notes in the ZIP.`
+  };
+
+  return messages[input.step];
 }
 
 function defaultLandingCode(profile: BrandProfile) {

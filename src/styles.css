@@ -1944,6 +1944,37 @@ button:disabled {
   color: var(--muted);
 }
 
+.step-ai-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid #bfdbfe;
+  border-radius: var(--radius-2xl);
+  background: linear-gradient(135deg, #eff6ff, #ffffff);
+  box-shadow: var(--shadow-sm);
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+.step-ai-panel h3 {
+  margin: 3px 0 6px;
+  color: #07193a;
+  font-size: 18px;
+}
+
+.step-ai-panel p {
+  margin: 0;
+  color: #475467;
+  line-height: 1.5;
+}
+
+.ai-step-button {
+  border-color: #93c5fd;
+  color: #1d4ed8;
+  white-space: nowrap;
+}
+
 .naming-head {
   display: flex;
   align-items: flex-start;
@@ -2344,6 +2375,14 @@ button:disabled {
   .sticky-step-nav {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .step-ai-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-step-button {
+    width: 100%;
   }
 
   .naming-head {
