@@ -215,6 +215,9 @@ export function App() {
   const [codeDraft, setCodeDraft] = useState(defaultLandingCode(defaultProfile));
   const [clipboardStatus, setClipboardStatus] = useState("");
   const [saveStatus, setSaveStatus] = useState("");
+  const [cloudStatus, setCloudStatus] = useState("");
+  const [billingStatus, setBillingStatus] = useState("");
+  const [projectId, setProjectId] = useState("");
   const [exportTarget, setExportTarget] = useState<ExportTarget>("full-production");
   const [exportOptions, setExportOptions] = useState<ExportOptions>({
     cssVariables: true,
@@ -657,6 +660,7 @@ export function App() {
     downloadStartupKit(brandProfile, launchTargets, codeDraft, exportTarget, exportOptions);
     setAssetStatus((current) => ({ ...current, export: true }));
     goToStep(8);
+    void saveExportRecord();
   }
 
   function exportRailwayBundle() {
@@ -667,6 +671,70 @@ export function App() {
 
   function toggleExportOption(option: keyof ExportOptions) {
     setExportOptions((current) => ({ ...current, [option]: !current[option] }));
+  }
+
+  async function saveProjectToDatabase() {
+    setCloudStatus("Saving project...");
+    try {
+      const response = await fetch("/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ownerKey: getAnonymousOwnerKey(),
+          brandProfile,
+          launchTargets
+        })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Database save failed.");
+      setProjectId(data.project?.id || "");
+      setCloudStatus("Project saved to database.");
+    } catch (error) {
+      setCloudStatus(error instanceof Error ? error.message : "Database save failed.");
+    }
+  }
+
+  async function saveExportRecord() {
+    try {
+      await fetch("/api/exports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ownerKey: getAnonymousOwnerKey(),
+          projectId: projectId || null,
+          exportTarget,
+          exportOptions,
+          brandProfile,
+          launchTargets
+        })
+      });
+    } catch {
+      // Export download should not be blocked if database persistence is not configured yet.
+    }
+  }
+
+  async function startCheckout(plan: "one-time" | "subscription") {
+    setBillingStatus("Opening secure Stripe checkout...");
+    try {
+      const response = await fetch("/api/billing/create-checkout-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          plan,
+          ownerKey: getAnonymousOwnerKey(),
+          businessName
+        })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Stripe checkout failed.");
+      if (data.url) {
+        window.location.href = data.url;
+        return;
+      }
+      throw new Error("Stripe did not return a checkout URL.");
+    } catch (error) {
+      setBillingStatus(error instanceof Error ? error.message : "Stripe checkout failed.");
+    }
   }
 
   async function copyCodeDraft() {
@@ -813,6 +881,8 @@ export function App() {
           brandProfile={brandProfile}
           businessName={businessName}
           checkStore={checkStore}
+          billingStatus={billingStatus}
+          cloudStatus={cloudStatus}
           clipboardStatus={clipboardStatus}
           codeDraft={codeDraft}
           copyCodeDraft={copyCodeDraft}
@@ -822,6 +892,8 @@ export function App() {
           exportTarget={exportTarget}
           exportStartupKit={exportStartupKit}
           exportRailwayBundle={exportRailwayBundle}
+          saveProjectToDatabase={saveProjectToDatabase}
+          startCheckout={startCheckout}
           generateIdentity={generateIdentity}
           generateFaviconAsset={generateFaviconAsset}
           generateHeroImageAsset={generateHeroImageAsset}
@@ -954,8 +1026,10 @@ function StepPage(props: {
   applyAiBrandEdit: () => void;
   audience: string;
   brandProfile: BrandProfile;
+  billingStatus: string;
   businessName: string;
   checkStore: (platform: "ios" | "android") => void;
+  cloudStatus: string;
   clipboardStatus: string;
   codeDraft: string;
   copyCodeDraft: () => void;
@@ -965,6 +1039,8 @@ function StepPage(props: {
   exportTarget: ExportTarget;
   exportStartupKit: () => void;
   exportRailwayBundle: () => void;
+  saveProjectToDatabase: () => void;
+  startCheckout: (plan: "one-time" | "subscription") => void;
   generateIdentity: () => void;
   generateFaviconAsset: () => void;
   generateHeroImageAsset: () => void;
@@ -1081,6 +1157,8 @@ function StepPage(props: {
         aiEditStatus={props.aiEditStatus}
         applyAiBrandEdit={props.applyAiBrandEdit}
         brandProfile={props.brandProfile}
+        billingStatus={props.billingStatus}
+        cloudStatus={props.cloudStatus}
         clipboardStatus={props.clipboardStatus}
         codeDraft={props.codeDraft}
         copyCodeDraft={props.copyCodeDraft}
@@ -1089,6 +1167,8 @@ function StepPage(props: {
         exportTarget={props.exportTarget}
         exportStartupKit={props.exportStartupKit}
         exportRailwayBundle={props.exportRailwayBundle}
+        saveProjectToDatabase={props.saveProjectToDatabase}
+        startCheckout={props.startCheckout}
         generateLandingPage={props.generateLandingPage}
         generateScreenshotInspiration={props.generateScreenshotInspiration}
         generateHomepageAsset={props.generateHomepageAsset}
@@ -1323,7 +1403,9 @@ function OutputPanel(props: {
   aiEditStatus: string;
   applyAiBrandEdit: () => void;
   brandProfile: BrandProfile;
+  billingStatus: string;
   checkStore: (platform: "ios" | "android") => void;
+  cloudStatus: string;
   clipboardStatus: string;
   codeDraft: string;
   copyCodeDraft: () => void;
@@ -1332,6 +1414,8 @@ function OutputPanel(props: {
   exportTarget: ExportTarget;
   exportStartupKit: () => void;
   exportRailwayBundle: () => void;
+  saveProjectToDatabase: () => void;
+  startCheckout: (plan: "one-time" | "subscription") => void;
   generateHomepageAsset: () => void;
   generateLandingPage: () => void;
   generateScreenshotInspiration: () => void;
@@ -1663,9 +1747,32 @@ function OutputPanel(props: {
           <p className="output-note">Generate the brand identity first so the hero image can pull the logo, colors, typography, and style direction.</p>
         ) : null}
         {props.step === 8 ? (
-          <button className="primary-button" data-guide="export-kit" disabled={!canExport} onClick={props.exportStartupKit} type="button">
-            <Download size={18} /> Export Startup Kit
-          </button>
+          <section className="production-foundation-panel">
+            <div>
+              <p className="eyebrow">Production foundation</p>
+              <h3>Database and billing are server-backed.</h3>
+              <p>Save the current brand profile, generated assets, regeneration memory, and export history to Postgres. Start Stripe checkout for either the one-time startup pack or monthly Launch Suite.</p>
+            </div>
+            <div className="foundation-actions">
+              <button className="secondary-button" onClick={props.saveProjectToDatabase} type="button">
+                <Database size={18} /> Save Project to Database
+              </button>
+              <button className="secondary-button" onClick={() => props.startCheckout("one-time")} type="button">
+                <BadgeDollarSign size={18} /> Buy Startup Pack
+              </button>
+              <button className="primary-button" onClick={() => props.startCheckout("subscription")} type="button">
+                <BadgeDollarSign size={18} /> Subscribe
+              </button>
+            </div>
+            {props.cloudStatus ? <p className="output-note">{props.cloudStatus}</p> : null}
+            {props.billingStatus ? <p className="output-note">{props.billingStatus}</p> : null}
+          </section>
+        ) : null}
+
+        {props.step === 8 ? (
+        <button className="primary-button" data-guide="export-kit" disabled={!canExport} onClick={props.exportStartupKit} type="button">
+          <Download size={18} /> Export Startup Kit
+        </button>
         ) : null}
         {props.step === 8 ? (
           <button className="secondary-button" disabled={!railwayStrictReady || props.generating} onClick={props.exportRailwayBundle} type="button">
@@ -2656,6 +2763,15 @@ function buildStepAiInsight(input: StepAiPayload) {
   };
 
   return messages[input.step];
+}
+
+function getAnonymousOwnerKey() {
+  const key = "launch-os-owner-key";
+  const existing = window.localStorage.getItem(key);
+  if (existing) return existing;
+  const value = window.crypto?.randomUUID?.() || `anon-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  window.localStorage.setItem(key, value);
+  return value;
 }
 
 function defaultLandingCode(profile: BrandProfile) {

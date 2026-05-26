@@ -17,9 +17,11 @@
     "@tippyjs/react": "^4.2.6",
     "@vitejs/plugin-react": "^5.0.4",
     "lucide-react": "^0.545.0",
+    "pg": "^8.21.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-joyride": "^3.1.0",
+    "stripe": "^22.1.1",
     "tippy.js": "^6.3.7",
     "vite": "^7.3.0"
   },

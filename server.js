@@ -3,7 +3,9 @@ import { readFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
+import { handleCreateCheckoutSession, handleStripeWebhook } from "./server/billing.js";
 import { handleAiImproveStep } from "./server/openai-ai.js";
+import { handleExports, handleProjects } from "./server/projects.js";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
 const distDir = join(root, "dist");
@@ -27,6 +29,22 @@ createServer(async (request, response) => {
 
   if (url.pathname === "/api/ai/improve-step") {
     await handleAiImproveStep(request, response);
+    return;
+  }
+  if (url.pathname === "/api/projects") {
+    await handleProjects(request, response);
+    return;
+  }
+  if (url.pathname === "/api/exports") {
+    await handleExports(request, response);
+    return;
+  }
+  if (url.pathname === "/api/billing/create-checkout-session") {
+    await handleCreateCheckoutSession(request, response);
+    return;
+  }
+  if (url.pathname === "/api/billing/webhook") {
+    await handleStripeWebhook(request, response);
     return;
   }
 

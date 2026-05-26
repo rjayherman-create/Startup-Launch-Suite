@@ -1354,6 +1354,32 @@ button:disabled {
   padding: 14px;
 }
 
+.production-foundation-panel {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  background: #eff6ff;
+  padding: 14px;
+}
+
+.production-foundation-panel h3 {
+  margin: 3px 0 6px;
+}
+
+.production-foundation-panel p {
+  margin: 0;
+  color: #475467;
+  line-height: 1.5;
+}
+
+.foundation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .export-target-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
