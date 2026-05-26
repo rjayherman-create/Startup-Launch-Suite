@@ -1926,20 +1926,55 @@ function VisualAssetGrid({ wantsApp, wantsWebsite }: { wantsApp: boolean; wantsW
 }
 
 function HomepageSection({ codeDraft, generating, onGenerate, profile, wantsWebsite }: { codeDraft: string; generating: boolean; onGenerate: () => void; profile: BrandProfile; wantsWebsite: boolean }) {
+  const sections = [
+    "Hero",
+    "Problem",
+    "Benefits",
+    "Product Proof",
+    "Pricing",
+    "Testimonials",
+    "FAQ",
+    "Final CTA"
+  ];
+
   return (
-    <section className="asset-builder-section">
+    <section className="landing-builder-section">
       <div className="asset-builder-copy">
         <p className="eyebrow">Consistent website generation</p>
-        <h3>Landing page</h3>
-        <p>{wantsWebsite ? "Generate the homepage after the hero image so the page uses the same colors, type, and visual direction." : "Website generation is skipped because this launch is currently set to app-only."}</p>
+        <h3>Conversion landing page</h3>
+        <p>{wantsWebsite ? "Generate a complete homepage with hero, benefits, proof, pricing, testimonials, FAQ, and final CTA using the same brand context." : "Website generation is skipped because this launch is currently set to app-only."}</p>
+        <div className="landing-section-map">
+          {sections.map((section) => (
+            <span key={section}>{section}</span>
+          ))}
+        </div>
         <button className="primary-button" data-guide="landing-page" disabled={!wantsWebsite || generating} onClick={onGenerate} type="button">
           <Globe2 size={18} /> Generate Landing Page
         </button>
       </div>
-      <div className="homepage-preview" style={{ background: profile.colors.background, color: profile.colors.text }}>
-        <span>{profile.businessName}</span>
-        <strong>{profile.tagline || "Launch-ready homepage"}</strong>
-        <p>{codeDraft ? "Editable homepage code is ready in Export Kit." : "Generate the homepage to create editable code."}</p>
+      <div className="landing-preview-shell" style={{ background: profile.colors.background, color: profile.colors.text }}>
+        <div className="landing-preview-nav">
+          <span>{profile.businessName}</span>
+          <small>Pricing</small>
+          <small>Proof</small>
+          <small>FAQ</small>
+        </div>
+        <div className="landing-preview-hero">
+          <div>
+            <strong>{profile.tagline || "Launch-ready homepage"}</strong>
+            <p>{profile.description}</p>
+            <button type="button">Start launch kit</button>
+          </div>
+          <div className="landing-preview-visual">
+            {profile.heroImage ? <img src={profile.heroImage.imageUrl} alt="" /> : <Sparkles size={34} />}
+          </div>
+        </div>
+        <div className="landing-preview-grid">
+          <span>3 core benefits</span>
+          <span>Social proof</span>
+          <span>Pricing block</span>
+        </div>
+        <p className="landing-code-status">{codeDraft ? "Editable production-style HTML is ready in Export Kit." : "Generate the landing page to create editable code."}</p>
       </div>
     </section>
   );
@@ -2362,65 +2397,388 @@ function escapeHtml(value: string) {
 }
 
 function defaultLandingCode(profile: BrandProfile) {
+  const name = escapeHtml(profile.businessName);
+  const tagline = escapeHtml(profile.tagline || `Launch ${profile.businessName} with a complete brand and website system.`);
+  const description = escapeHtml(profile.description);
+  const audience = escapeHtml(profile.audience);
+  const industry = escapeHtml(profile.industry);
+  const heroImage = profile.heroImage?.imageUrl || "";
+
   return `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>${profile.businessName}</title>
+    <meta name="description" content="${description}" />
+    <meta property="og:title" content="${name}" />
+    <meta property="og:description" content="${tagline}" />
+    <title>${name}</title>
     <style>
+      :root {
+        --primary: ${profile.colors.primary};
+        --secondary: ${profile.colors.secondary};
+        --accent: ${profile.colors.accent};
+        --background: ${profile.colors.background};
+        --surface: ${profile.colors.surface};
+        --text: ${profile.colors.text};
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
       body {
         margin: 0;
-        background: ${profile.colors.background};
-        color: ${profile.colors.text};
+        background: var(--background);
+        color: var(--text);
         font-family: ${profile.typography.bodyFont}, system-ui, sans-serif;
       }
 
-      main {
-        display: grid;
-        min-height: 100vh;
-        place-items: center;
-        padding: 48px;
+      a {
+        color: inherit;
+        text-decoration: none;
       }
 
-      section {
-        max-width: 880px;
+      .page {
+        overflow: hidden;
+      }
+
+      .nav,
+      section,
+      footer {
+        width: min(1120px, calc(100% - 40px));
+        margin: 0 auto;
+      }
+
+      .nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 24px 0;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 900;
+      }
+
+      .brand-mark {
+        display: grid;
+        width: 38px;
+        height: 38px;
+        place-items: center;
+        border-radius: 10px;
+        background: var(--primary);
+        color: #fff;
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 18px;
+        color: color-mix(in srgb, var(--text), transparent 26%);
+        font-weight: 800;
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(320px, 0.86fr);
+        align-items: center;
+        gap: 44px;
+        min-height: 680px;
+        padding: 40px 0 72px;
+      }
+
+      .eyebrow {
+        color: var(--accent);
+        font-size: 13px;
+        font-weight: 900;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      h3 {
+        font-family: ${profile.typography.headingFont}, system-ui, sans-serif;
+        letter-spacing: 0;
       }
 
       h1 {
-        margin: 0 0 16px;
-        font-family: ${profile.typography.headingFont}, system-ui, sans-serif;
-        font-size: clamp(44px, 8vw, 96px);
-        line-height: 0.95;
+        margin: 12px 0 18px;
+        font-size: clamp(44px, 7vw, 86px);
+        line-height: 0.98;
+      }
+
+      h2 {
+        margin: 0 0 14px;
+        font-size: clamp(30px, 4vw, 54px);
+        line-height: 1.04;
       }
 
       p {
-        max-width: 680px;
-        color: ${profile.colors.text};
-        font-size: 20px;
-        line-height: 1.6;
-        opacity: 0.82;
+        color: color-mix(in srgb, var(--text), transparent 22%);
+        font-size: 18px;
+        line-height: 1.65;
       }
 
-      a {
+      .hero-copy p {
+        max-width: 660px;
+        font-size: 21px;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 28px;
+      }
+
+      .button {
         display: inline-flex;
-        margin-top: 24px;
+        align-items: center;
+        justify-content: center;
+        min-height: 48px;
         border-radius: 8px;
-        background: ${profile.colors.primary};
-        color: ${profile.colors.text};
-        padding: 14px 18px;
+        background: var(--primary);
+        color: #fff;
+        padding: 0 18px;
         font-weight: 800;
-        text-decoration: none;
+      }
+
+      .button.secondary {
+        border: 1px solid color-mix(in srgb, var(--text), transparent 78%);
+        background: transparent;
+        color: var(--text);
+      }
+
+      .hero-card {
+        border: 1px solid color-mix(in srgb, var(--text), transparent 86%);
+        border-radius: 24px;
+        background: color-mix(in srgb, var(--surface), transparent 6%);
+        padding: 18px;
+        box-shadow: 0 28px 80px rgba(0, 0, 0, 0.18);
+      }
+
+      .hero-card img,
+      .hero-placeholder {
+        display: block;
+        width: 100%;
+        aspect-ratio: 16 / 10;
+        border-radius: 18px;
+        object-fit: cover;
+      }
+
+      .hero-placeholder {
+        background: linear-gradient(135deg, var(--primary), var(--secondary), var(--accent));
+      }
+
+      .proof-strip,
+      .grid,
+      .pricing-grid,
+      .faq-grid {
+        display: grid;
+        gap: 16px;
+      }
+
+      .proof-strip {
+        grid-template-columns: repeat(3, 1fr);
+        padding: 22px 0 54px;
+      }
+
+      .proof-strip strong {
+        display: block;
+        font-size: 32px;
+      }
+
+      .section-block {
+        padding: 78px 0;
+      }
+
+      .grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .card,
+      .price,
+      .quote,
+      .faq {
+        border: 1px solid color-mix(in srgb, var(--text), transparent 86%);
+        border-radius: 18px;
+        background: color-mix(in srgb, var(--surface), transparent 4%);
+        padding: 22px;
+      }
+
+      .card h3,
+      .price h3 {
+        margin: 0;
+        font-size: 22px;
+      }
+
+      .pricing-grid {
+        grid-template-columns: 0.9fr 1.1fr;
+      }
+
+      .price.featured {
+        border-color: var(--accent);
+        box-shadow: 0 22px 60px color-mix(in srgb, var(--accent), transparent 82%);
+      }
+
+      .amount {
+        display: block;
+        margin: 18px 0;
+        font-size: 44px;
+        font-weight: 950;
+      }
+
+      .faq-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .final-cta {
+        margin-bottom: 56px;
+        border-radius: 28px;
+        background: var(--primary);
+        color: #fff;
+        padding: 54px;
+      }
+
+      .final-cta p {
+        color: rgba(255, 255, 255, 0.82);
+      }
+
+      footer {
+        padding: 28px 0 44px;
+        color: color-mix(in srgb, var(--text), transparent 34%);
+      }
+
+      @media (max-width: 760px) {
+        .nav-links {
+          display: none;
+        }
+
+        .hero,
+        .grid,
+        .proof-strip,
+        .pricing-grid,
+        .faq-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .hero {
+          min-height: auto;
+          padding-top: 24px;
+        }
+
+        .final-cta {
+          padding: 30px;
+        }
       }
     </style>
   </head>
   <body>
-    <main>
-      <section>
-        <h1>${profile.businessName}</h1>
-        <p>${profile.tagline || profile.description}</p>
-        <a href="#cta">Start now</a>
+    <main class="page">
+      <nav class="nav" aria-label="Main navigation">
+        <a class="brand" href="#">
+          <span class="brand-mark">${name.slice(0, 1)}</span>
+          <span>${name}</span>
+        </a>
+        <div class="nav-links">
+          <a href="#benefits">Benefits</a>
+          <a href="#pricing">Pricing</a>
+          <a href="#faq">FAQ</a>
+        </div>
+      </nav>
+
+      <section class="hero">
+        <div class="hero-copy">
+          <span class="eyebrow">${industry} launch system for ${audience}</span>
+          <h1>${tagline}</h1>
+          <p>${description}</p>
+          <div class="actions">
+            <a class="button" href="#cta">Start building</a>
+            <a class="button secondary" href="#benefits">See how it works</a>
+          </div>
+        </div>
+        <div class="hero-card">
+          ${heroImage ? `<img src="${heroImage}" alt="${name} product preview" />` : `<div class="hero-placeholder" aria-label="${name} visual preview"></div>`}
+        </div>
       </section>
+
+      <section class="proof-strip" aria-label="Launch proof">
+        <div><strong>1</strong><span>shared brand context</span></div>
+        <div><strong>8</strong><span>launch-ready sections</span></div>
+        <div><strong>100%</strong><span>consistent visual system</span></div>
+      </section>
+
+      <section class="section-block" id="benefits">
+        <span class="eyebrow">Why it matters</span>
+        <h2>Turn a startup idea into a launch-ready story.</h2>
+        <div class="grid">
+          <article class="card">
+            <h3>Clear positioning</h3>
+            <p>Explain the product, audience, and category without generic website-builder copy.</p>
+          </article>
+          <article class="card">
+            <h3>Consistent visuals</h3>
+            <p>Use one identity system across logo, hero imagery, app graphics, and social previews.</p>
+          </article>
+          <article class="card">
+            <h3>Conversion flow</h3>
+            <p>Guide visitors from problem to proof to pricing to action with a focused page structure.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section-block">
+        <span class="eyebrow">Product proof</span>
+        <h2>Built for founders who need momentum, not scattered tools.</h2>
+        <div class="grid">
+          <article class="quote"><p>"${name} helped us move from rough idea to investor-ready launch assets in one afternoon."</p><strong>Founder preview</strong></article>
+          <article class="quote"><p>"The brand stayed consistent across website, app store, and social assets."</p><strong>Launch team preview</strong></article>
+          <article class="quote"><p>"The page structure made the offer easier to understand and act on."</p><strong>Customer preview</strong></article>
+        </div>
+      </section>
+
+      <section class="section-block" id="pricing">
+        <span class="eyebrow">Simple launch pricing</span>
+        <h2>Start with the package that matches your launch stage.</h2>
+        <div class="pricing-grid">
+          <article class="price">
+            <h3>Starter</h3>
+            <span class="amount">$99</span>
+            <p>One-time startup pack with logo, landing page code, and core launch assets.</p>
+            <a class="button secondary" href="#cta">Choose Starter</a>
+          </article>
+          <article class="price featured">
+            <h3>Launch Suite</h3>
+            <span class="amount">$49/mo</span>
+            <p>Ongoing regeneration, export packages, app store assets, SEO metadata, and brand memory.</p>
+            <a class="button" href="#cta">Choose Launch Suite</a>
+          </article>
+        </div>
+      </section>
+
+      <section class="section-block" id="faq">
+        <span class="eyebrow">Questions</span>
+        <h2>Everything a visitor needs before they click.</h2>
+        <div class="faq-grid">
+          <article class="faq"><h3>Who is this for?</h3><p>${audience} building a ${industry} product that needs a polished launch presence.</p></article>
+          <article class="faq"><h3>What do I get?</h3><p>Logo files, hero visuals, app icons, landing page code, SEO/social previews, and brand tokens.</p></article>
+          <article class="faq"><h3>Can the brand change?</h3><p>Yes. Regeneration memory keeps the full ecosystem aligned when colors, style, or logo direction changes.</p></article>
+          <article class="faq"><h3>Can I edit the code?</h3><p>Yes. The exported HTML is editable and designed to be copied into your production workflow.</p></article>
+        </div>
+      </section>
+
+      <section class="final-cta" id="cta">
+        <span class="eyebrow">Ready to launch</span>
+        <h2>Give ${name} a launch page that feels intentional from the first click.</h2>
+        <p>Use this page as your homepage, waitlist page, investor preview, or app launch destination.</p>
+        <a class="button secondary" href="mailto:hello@example.com">Request early access</a>
+      </section>
+
+      <footer>Built with Launch OS brand context for ${name}.</footer>
     </main>
   </body>
 </html>`;
