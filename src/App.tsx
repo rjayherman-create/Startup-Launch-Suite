@@ -239,6 +239,24 @@ export function App() {
   }, [step]);
 
   useEffect(() => {
+    if (!isMobileNavOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsMobileNavOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isMobileNavOpen]);
+
+  useEffect(() => {
     window.requestAnimationFrame(() => scrollToStepSection(step));
   }, [step]);
 
