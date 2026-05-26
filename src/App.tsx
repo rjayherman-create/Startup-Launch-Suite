@@ -194,6 +194,8 @@ export function App() {
   const [aiEditPrompt, setAiEditPrompt] = useState("");
   const [aiEditStatus, setAiEditStatus] = useState("");
   const [stepAiInsight, setStepAiInsight] = useState("");
+  const [stepAiLoading, setStepAiLoading] = useState(false);
+  const [stepAiProvider, setStepAiProvider] = useState<"local" | "openai">("local");
   const [nameIdeas, setNameIdeas] = useState<string[]>(["LaunchPilot", "FounderForge", "StartupLift", "BrandStack"]);
   const [nameFilter, setNameFilter] = useState<NameFilter | null>(null);
   const [favoriteNames, setFavoriteNames] = useState<string[]>([]);
@@ -575,9 +577,10 @@ export function App() {
     window.setTimeout(() => setAiEditStatus(""), 2200);
   }
 
-  function improveCurrentStep() {
-    const insight = buildStepAiInsight({
+  async function improveCurrentStep() {
+    const payload = buildStepAiPayload({
       step,
+      routeLabel: currentStepRoute.label,
       businessName,
       tagline,
       description,
@@ -591,7 +594,27 @@ export function App() {
       exportTarget
     });
 
-    setStepAiInsight(insight);
+    setStepAiLoading(true);
+    try {
+      const response = await fetch("/api/ai/improve-step", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || "OpenAI route is not available yet.");
+      }
+      setStepAiProvider("openai");
+      setStepAiInsight(formatOpenAiInsight(data));
+    } catch (error) {
+      setStepAiProvider("local");
+      setStepAiInsight(`${buildStepAiInsight(payload)} ${error instanceof Error ? `OpenAI note: ${error.message}` : "OpenAI note: route unavailable."}`);
+    } finally {
+      setStepAiLoading(false);
+    }
 
     if (step === 1) {
       generateNameIdeas(nameFilter);
@@ -741,7 +764,9 @@ export function App() {
 
         <StepAiPanel
           insight={stepAiInsight}
+          loading={stepAiLoading}
           onImprove={improveCurrentStep}
+          provider={stepAiProvider}
           step={step}
         />
 
@@ -989,7 +1014,7 @@ function StepPage(props: {
   );
 }
 
-function StepAiPanel({ insight, onImprove, step }: { insight: string; onImprove: () => void; step: BuilderStep }) {
+function StepAiPanel({ insight, loading, onImprove, provider, step }: { insight: string; loading: boolean; onImprove: () => void; provider: "local" | "openai"; step: BuilderStep }) {
   const stepActions: Record<BuilderStep, string> = {
     1: "Generate stronger startup names and positioning angles.",
     2: "Rewrite the description into clearer launch copy.",
@@ -1006,10 +1031,11 @@ function StepAiPanel({ insight, onImprove, step }: { insight: string; onImprove:
       <div>
         <p className="eyebrow">AI assistant on this step</p>
         <h3>{stepActions[step]}</h3>
-        <p>{insight || "OpenAI is not connected yet. This uses local brand-context intelligence now and is ready for a secure backend OpenAI endpoint later."}</p>
+        <p>{insight || "Connected to the secure AI route. Add the server OpenAI key to use live AI; otherwise this falls back to local brand-context intelligence."}</p>
+        <span className={provider === "openai" ? "ai-provider-badge openai" : "ai-provider-badge"}>{provider === "openai" ? "OpenAI connected" : "Local fallback"}</span>
       </div>
-      <button className="secondary-button ai-step-button" onClick={onImprove} type="button">
-        <Sparkles size={18} /> AI Improve This Step
+      <button className="secondary-button ai-step-button" disabled={loading} onClick={onImprove} type="button">
+        <Sparkles size={18} /> {loading ? "Asking AI..." : "AI Improve This Step"}
       </button>
     </section>
   );
@@ -2463,8 +2489,9 @@ function escapeHtml(value: string) {
   });
 }
 
-function buildStepAiInsight(input: {
+type StepAiPayload = {
   step: BuilderStep;
+  routeLabel: string;
   businessName: string;
   tagline: string;
   description: string;
@@ -2476,7 +2503,23 @@ function buildStepAiInsight(input: {
   codeDraft: string;
   storeCheck: Record<"ios" | "android", StoreCheck>;
   exportTarget: ExportTarget;
-}) {
+};
+
+function buildStepAiPayload(input: StepAiPayload): StepAiPayload {
+  return input;
+}
+
+function formatOpenAiInsight(data: { insight?: string; suggestions?: string[]; actions?: string[] }) {
+  const suggestions = Array.isArray(data.suggestions) && data.suggestions.length
+    ? ` Suggestions: ${data.suggestions.join(" ")}`
+    : "";
+  const actions = Array.isArray(data.actions) && data.actions.length
+    ? ` Next: ${data.actions.join(" ")}`
+    : "";
+  return `${data.insight || "OpenAI reviewed this step."}${suggestions}${actions}`;
+}
+
+function buildStepAiInsight(input: StepAiPayload) {
   const launchMix = [
     input.launchTargets.website ? "website" : null,
     input.launchTargets.ios ? "iOS app" : null,

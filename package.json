@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
+    "start": "node server.js",
+    "preview": "vite preview --host 0.0.0.0",
     "build": "tsc -p tsconfig.json && vite build",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test:checks": "vitest run src/export-checks.test.ts",
